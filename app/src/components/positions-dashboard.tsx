@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { parseEventLogs } from "viem";
 import {
   useAccount,
@@ -9,19 +9,27 @@ import {
   useWaitForTransactionReceipt,
 } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePositions } from "@/hooks/use-positions";
+import { usePositions, type PositionView } from "@/hooks/use-positions";
 import { type MarketInfo } from "@/hooks/use-markets";
 import { perpEngineAbi, ENGINE_ADDRESS } from "@/lib/contracts";
 import { CHAIN_ID } from "@/lib/chain";
 import { formatUsdPrice, formatETH } from "@/lib/format";
+import { PnlCardModal, type PnlCardData } from "@/components/pnl-card";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
+
+const leverageOf = (sizeEth: bigint, collateral: bigint) =>
+  collateral > 0n ? Number(sizeEth) / Number(collateral) : 0;
+
+const pnlPctOf = (pnl: bigint, collateral: bigint) =>
+  collateral > 0n ? Number((pnl * 10000n) / collateral) / 100 : 0;
 
 interface CloseResult {
   symbol: string;
   pnl: bigint; // signed realized PnL
   payout: bigint; // ETH returned to the trader
   liquidated: boolean;
+  card: PnlCardData; // fully-built shareable card for this close
 }
 
 export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
@@ -35,6 +43,9 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
   } = useWaitForTransactionReceipt({ hash });
   const queryClient = useQueryClient();
   const [result, setResult] = useState<CloseResult | null>(null);
+  const [card, setCard] = useState<PnlCardData | null>(null);
+  // Snapshot of the position being closed, captured at click time (it's gone from chain after close).
+  const closingSnap = useRef<PositionView | null>(null);
 
   // Escrowed payout (only set if a direct push to the trader ever failed).
   const { data: owedData } = useReadContract({
@@ -46,10 +57,11 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
   });
   const owed = (owedData as bigint | undefined) ?? 0n;
 
-  const symbolOf = (cid: number) =>
-    markets.find((m) => m.id === cid)?.symbol ?? `#${cid}`;
+  const marketOf = (cid: number) => markets.find((m) => m.id === cid);
+  const symbolOf = (cid: number) => marketOf(cid)?.symbol ?? `#${cid}`;
 
-  // On a confirmed close, decode the on-chain PositionClosed event to show the realized outcome.
+  // On a confirmed close, decode the on-chain PositionClosed event to show the realized outcome and
+  // build the shareable card (merging the event with the pre-close position snapshot).
   useEffect(() => {
     if (!isSuccess || !receipt) return;
     try {
@@ -61,34 +73,72 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
       if (events.length > 0) {
         const a = events[0].args as unknown as {
           commodityId: bigint;
+          exitPrice: bigint;
           pnl: bigint;
           payout: bigint;
           liquidated: boolean;
         };
+        const snap = closingSnap.current;
+        const cid = Number(a.commodityId);
+        const m = marketOf(cid);
+        const collateral = snap?.collateral ?? 0n;
         setResult({
-          symbol: symbolOf(Number(a.commodityId)),
+          symbol: symbolOf(cid),
           pnl: a.pnl,
           payout: a.payout,
           liquidated: a.liquidated,
+          card: {
+            symbol: symbolOf(cid),
+            unit: m?.unit,
+            isLong: snap?.isLong ?? true,
+            leverageX: leverageOf(snap?.sizeEth ?? 0n, collateral),
+            entryPrice: snap?.entryPrice ?? 0n,
+            exitPrice: a.exitPrice,
+            pnlEth: a.pnl,
+            pnlPct: pnlPctOf(a.pnl, collateral),
+            realized: true,
+            liquidated: a.liquidated,
+            handle: address,
+          },
         });
       }
     } catch {
       /* non-close tx (e.g. redeem) — no banner */
     }
+    closingSnap.current = null;
     queryClient.invalidateQueries();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuccess, receipt]);
 
   if (!isConnected) return null;
 
-  function close(id: bigint) {
+  function close(p: PositionView) {
+    closingSnap.current = p; // remember it for the shareable card (chain state is gone after close)
     writeContract({
       address: ENGINE_ADDRESS,
       abi: perpEngineAbi,
       functionName: "closePosition",
-      args: [id, 0n],
+      args: [p.id, 0n],
       chainId: CHAIN_ID,
     });
+  }
+
+  // A live (unrealized) card for an open position: exit = current mark, PnL = unrealized.
+  function openCard(p: PositionView): PnlCardData | null {
+    if (p.pnl === null) return null; // stale price — no meaningful card
+    const m = marketOf(p.commodityId);
+    return {
+      symbol: symbolOf(p.commodityId),
+      unit: m?.unit,
+      isLong: p.isLong,
+      leverageX: leverageOf(p.sizeEth, p.collateral),
+      entryPrice: p.entryPrice,
+      exitPrice: m?.priceE8 ?? p.entryPrice,
+      pnlEth: p.pnl,
+      pnlPct: pnlPctOf(p.pnl, p.collateral),
+      realized: false,
+      handle: address,
+    };
   }
 
   function redeem() {
@@ -106,7 +156,15 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
     <section>
       <h2 className="mb-3 text-sm font-medium text-white/50">Your positions</h2>
 
-      {result && <ResultBanner result={result} onDismiss={() => setResult(null)} />}
+      {result && (
+        <ResultBanner
+          result={result}
+          onShare={() => setCard(result.card)}
+          onDismiss={() => setResult(null)}
+        />
+      )}
+
+      {card && <PnlCardModal data={card} onClose={() => setCard(null)} />}
 
       {owed > 0n && (
         <div className="mb-4 flex items-center justify-between rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-5 py-3 text-sm">
@@ -185,13 +243,26 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
                       {p.borrowFee === null ? "—" : formatETH(p.borrowFee, 6)}
                     </td>
                     <td className="text-right">
-                      <button
-                        disabled={busy}
-                        onClick={() => close(p.id)}
-                        className="rounded-full border border-white/15 px-4 py-1.5 text-xs hover:bg-white/10 disabled:opacity-40"
-                      >
-                        Close
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          disabled={p.pnl === null}
+                          onClick={() => {
+                            const c = openCard(p);
+                            if (c) setCard(c);
+                          }}
+                          title={p.pnl === null ? "Price stale" : "Share this position"}
+                          className="rounded-full border border-white/15 px-3 py-1.5 text-xs hover:bg-white/10 disabled:opacity-30"
+                        >
+                          Card
+                        </button>
+                        <button
+                          disabled={busy}
+                          onClick={() => close(p)}
+                          className="rounded-full border border-white/15 px-4 py-1.5 text-xs hover:bg-white/10 disabled:opacity-40"
+                        >
+                          Close
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -206,9 +277,11 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
 
 function ResultBanner({
   result,
+  onShare,
   onDismiss,
 }: {
   result: CloseResult;
+  onShare: () => void;
   onDismiss: () => void;
 }) {
   const win = result.pnl >= 0n;
@@ -238,13 +311,26 @@ function ResultBanner({
           paid to your wallet
         </div>
       </div>
-      <button
-        onClick={onDismiss}
-        className="ml-4 text-white/40 hover:text-white"
-        aria-label="Dismiss"
-      >
-        ×
-      </button>
+      <div className="ml-4 flex items-center gap-3">
+        <button
+          onClick={onShare}
+          className={
+            "rounded-full px-4 py-1.5 text-xs font-medium " +
+            (win
+              ? "bg-emerald-400 text-black hover:bg-emerald-300"
+              : "bg-white/10 text-white hover:bg-white/20")
+          }
+        >
+          {win ? "Share your win" : "Share card"}
+        </button>
+        <button
+          onClick={onDismiss}
+          className="text-white/40 hover:text-white"
+          aria-label="Dismiss"
+        >
+          ×
+        </button>
+      </div>
     </div>
   );
 }
