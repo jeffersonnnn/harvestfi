@@ -35,7 +35,7 @@ export function AddNetworkButton() {
   return (
     <button
       onClick={add}
-      className="rounded-full border border-white/15 px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 transition-colors"
+      className="rounded-full border border-bone/15 px-4 py-2.5 text-sm text-bone/80 hover:bg-bone/5 transition-colors"
     >
       {state === "done" ? "Network added" : "Add network"}
     </button>

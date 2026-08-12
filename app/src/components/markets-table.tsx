@@ -1,7 +1,10 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import { type MarketInfo } from "@/hooks/use-markets";
 import { formatUsdPrice, formatETH } from "@/lib/format";
+import { marketMeta, prettyName, GROUPS, type Group } from "@/lib/commodities-meta";
 
 export function MarketsTable({
   markets,
@@ -12,60 +15,151 @@ export function MarketsTable({
   isLoading: boolean;
   onTrade: (m: MarketInfo) => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [group, setGroup] = useState<Group | "All">("All");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return markets.filter((m) => {
+      const g = marketMeta(m.symbol).group;
+      if (group !== "All" && g !== group) return false;
+      if (!q) return true;
+      return m.symbol.toLowerCase().includes(q) || prettyName(m.symbol).toLowerCase().includes(q);
+    });
+  }, [markets, query, group]);
+
   return (
-    <div className="overflow-x-auto rounded-2xl border border-white/10">
-      <table className="w-full min-w-[640px] text-sm">
-        <thead className="text-left text-xs text-white/40">
-          <tr className="[&>th]:px-4 [&>th]:py-3">
-            <th>Commodity</th>
-            <th>Category</th>
-            <th className="text-right">Price</th>
-            <th className="text-right">Max lev</th>
-            <th className="text-right">Open interest (L / S)</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-white/5">
-          {isLoading && markets.length === 0 && (
-            <tr>
-              <td colSpan={6} className="px-4 py-8 text-center text-white/40">
-                Loading markets…
-              </td>
-            </tr>
-          )}
-          {markets.map((m) => (
-            <tr key={m.id} className="[&>td]:px-4 [&>td]:py-3">
-              <td className="font-medium">
-                {m.symbol}
-                <span className="ml-1 text-xs text-white/30">/{m.unit}</span>
-              </td>
-              <td className="text-white/60">{m.category}</td>
-              <td className="text-right">
-                {m.stale ? (
-                  <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-xs text-amber-300">
-                    stale
-                  </span>
-                ) : (
-                  <span>{formatUsdPrice(m.priceE8)}</span>
-                )}
-              </td>
-              <td className="text-right text-white/60">{m.maxLeverageX}×</td>
-              <td className="text-right text-white/60">
-                {formatETH(m.longOI)} / {formatETH(m.shortOI)}
-              </td>
-              <td className="text-right">
-                <button
-                  disabled={m.stale}
-                  onClick={() => onTrade(m)}
-                  className="rounded-full bg-emerald-400 px-4 py-1.5 text-xs font-medium text-black hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Trade
-                </button>
-              </td>
-            </tr>
+    <div>
+      {/* Controls */}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-1.5">
+          <Chip active={group === "All"} onClick={() => setGroup("All")}>
+            All
+          </Chip>
+          {GROUPS.map((g) => (
+            <Chip key={g} active={group === g} onClick={() => setGroup(g)}>
+              {g}
+            </Chip>
           ))}
-        </tbody>
-      </table>
+        </div>
+        <div className="relative sm:w-64">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-bone/35" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search commodities…"
+            className="w-full rounded-full border border-bone/10 bg-soil-900/60 py-2 pl-9 pr-3 text-sm outline-none placeholder:text-bone/35 focus:border-wheat/40"
+          />
+        </div>
+      </div>
+
+      {/* Board */}
+      <div className="overflow-x-auto rounded-2xl border border-bone/10 bg-soil-900/40">
+        <table className="w-full min-w-[680px] border-collapse">
+          <thead>
+            <tr className="label border-b border-bone/10 text-left text-bone/40 [&>th]:px-4 [&>th]:py-3 [&>th]:font-normal">
+              <th>Commodity</th>
+              <th>Group</th>
+              <th className="text-right">Price</th>
+              <th className="text-right">Max lev.</th>
+              <th className="text-right">Open interest · L / S</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading && markets.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-12 text-center text-sm text-bone/40">
+                  Reading the board…
+                </td>
+              </tr>
+            )}
+            {!isLoading && filtered.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-12 text-center text-sm text-bone/40">
+                  No commodities match.
+                </td>
+              </tr>
+            )}
+            {filtered.map((m) => {
+              const meta = marketMeta(m.symbol);
+              return (
+                <tr
+                  key={m.id}
+                  className="group border-b border-bone/5 transition-colors last:border-0 hover:bg-bone/[0.02] [&>td]:px-4 [&>td]:py-3.5"
+                >
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <span className="grid h-8 w-8 place-items-center rounded-md bg-soil-800 text-base">
+                        {meta.glyph}
+                      </span>
+                      <div>
+                        <div className="font-medium leading-tight">{prettyName(m.symbol)}</div>
+                        <div className="tnum text-xs text-bone/40">
+                          {m.symbol} · /{m.unit}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="label rounded-full border border-bone/15 px-2 py-0.5 text-bone/55">
+                      {meta.group}
+                    </span>
+                  </td>
+                  <td className="text-right">
+                    {m.stale ? (
+                      <span className="label rounded-full bg-wheat/10 px-2 py-0.5 text-wheat/90">
+                        stale
+                      </span>
+                    ) : (
+                      <span className="tnum text-[0.95rem]">{formatUsdPrice(m.priceE8)}</span>
+                    )}
+                  </td>
+                  <td className="tnum text-right text-bone/60">{m.maxLeverageX}×</td>
+                  <td className="tnum text-right text-xs text-bone/55">
+                    <span className="text-field">{formatETH(m.longOI)}</span>
+                    <span className="text-bone/25"> / </span>
+                    <span className="text-rust">{formatETH(m.shortOI)}</span>
+                  </td>
+                  <td className="text-right">
+                    <button
+                      disabled={m.stale}
+                      onClick={() => onTrade(m)}
+                      className="rounded-full bg-bone/10 px-4 py-1.5 text-xs font-semibold text-bone transition-colors hover:bg-wheat hover:text-soil-950 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-bone/10 disabled:hover:text-bone"
+                    >
+                      Trade
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
+  );
+}
+
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={
+        "rounded-full px-3.5 py-1.5 text-sm transition-colors " +
+        (active
+          ? "bg-wheat text-soil-950"
+          : "border border-bone/10 text-bone/55 hover:border-bone/25 hover:text-bone/80")
+      }
+    >
+      {children}
+    </button>
   );
 }

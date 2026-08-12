@@ -60,43 +60,43 @@ export function LpPanel() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+        <div className="rounded-2xl border border-bone/10 bg-bone/[0.02] p-5">
           <h3 className="mb-3 text-sm font-medium">Deposit</h3>
           <input
             value={deposit}
             onChange={(e) => setDeposit(e.target.value)}
             inputMode="decimal"
-            className="mb-3 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-white/30"
+            className="mb-3 w-full rounded-xl border border-bone/10 bg-bone/5 px-3 py-2 text-sm outline-none focus:border-bone/30"
           />
           <button
             disabled={!isConnected || busy}
             onClick={doDeposit}
-            className="w-full rounded-xl bg-emerald-400 px-4 py-2.5 text-sm font-medium text-black hover:bg-emerald-300 disabled:opacity-40"
+            className="w-full rounded-xl bg-field px-4 py-2.5 text-sm font-medium text-soil-950 hover:bg-field/90 disabled:opacity-40"
           >
             {isConnected ? "Deposit ETH" : "Connect wallet"}
           </button>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+        <div className="rounded-2xl border border-bone/10 bg-bone/[0.02] p-5">
           <h3 className="mb-3 text-sm font-medium">Withdraw</h3>
           <input
             value={withdraw}
             onChange={(e) => setWithdraw(e.target.value)}
             inputMode="decimal"
             placeholder={`max ${formatETH(myValue)} ETH`}
-            className="mb-3 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-white/25 focus:border-white/30"
+            className="mb-3 w-full rounded-xl border border-bone/10 bg-bone/5 px-3 py-2 text-sm outline-none placeholder:text-bone/25 focus:border-bone/30"
           />
           <button
             disabled={!isConnected || busy || myShares === 0n}
             onClick={doWithdraw}
-            className="w-full rounded-xl border border-white/15 px-4 py-2.5 text-sm hover:bg-white/10 disabled:opacity-40"
+            className="w-full rounded-xl border border-bone/15 px-4 py-2.5 text-sm hover:bg-bone/10 disabled:opacity-40"
           >
             Withdraw
           </button>
         </div>
       </div>
       {error && (
-        <p className="break-words text-xs text-red-400">{error.message.slice(0, 160)}</p>
+        <p className="break-words text-xs text-rust">{error.message.slice(0, 160)}</p>
       )}
     </div>
   );
@@ -104,8 +104,8 @@ export function LpPanel() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-      <div className="text-xs text-white/40">{label}</div>
+    <div className="rounded-2xl border border-bone/10 bg-bone/[0.02] p-4">
+      <div className="text-xs text-bone/40">{label}</div>
       <div className="mt-1 text-lg font-medium">{value}</div>
     </div>
   );

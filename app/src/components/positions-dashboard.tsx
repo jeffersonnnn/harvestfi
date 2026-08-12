@@ -154,7 +154,7 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
 
   return (
     <section>
-      <h2 className="mb-3 text-sm font-medium text-white/50">Your positions</h2>
+      <h2 className="mb-3 text-sm font-medium text-bone/50">Your positions</h2>
 
       {result && (
         <ResultBanner
@@ -167,18 +167,18 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
       {card && <PnlCardModal data={card} onClose={() => setCard(null)} />}
 
       {owed > 0n && (
-        <div className="mb-4 flex items-center justify-between rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-5 py-3 text-sm">
+        <div className="mb-4 flex items-center justify-between rounded-2xl border border-field/30 bg-field/10 px-5 py-3 text-sm">
           <span>
             Redeemable payout:{" "}
-            <span className="font-medium text-emerald-300">
+            <span className="font-medium text-field">
               {formatETH(owed, 6)} ETH
             </span>{" "}
-            <span className="text-white/40">(escrowed from a close)</span>
+            <span className="text-bone/40">(escrowed from a close)</span>
           </span>
           <button
             disabled={busy}
             onClick={redeem}
-            className="rounded-full bg-emerald-400 px-4 py-1.5 text-xs font-medium text-black hover:bg-emerald-300 disabled:opacity-40"
+            className="rounded-full bg-field px-4 py-1.5 text-xs font-medium text-soil-950 hover:bg-field/90 disabled:opacity-40"
           >
             Redeem
           </button>
@@ -186,13 +186,13 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-white/40">Loading positions…</p>
+        <p className="text-sm text-bone/40">Loading positions…</p>
       ) : positions.length === 0 ? (
-        <p className="text-sm text-white/40">No open positions.</p>
+        <p className="text-sm text-bone/40">No open positions.</p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-white/10">
+        <div className="overflow-x-auto rounded-2xl border border-bone/10">
           <table className="w-full min-w-[640px] text-sm">
-            <thead className="text-left text-xs text-white/40">
+            <thead className="text-left text-xs text-bone/40">
               <tr className="[&>th]:px-4 [&>th]:py-3">
                 <th>Market</th>
                 <th>Side</th>
@@ -203,7 +203,7 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
                 <th></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-bone/5">
               {positions.map((p) => {
                 const pnlPos = p.pnl !== null && p.pnl >= 0n;
                 return (
@@ -211,35 +211,35 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
                     <td className="font-medium">
                       {symbolOf(p.commodityId)}
                       {p.liquidatable && (
-                        <span className="ml-2 rounded-full bg-red-400/15 px-2 py-0.5 text-xs text-red-300">
+                        <span className="ml-2 rounded-full bg-rust/15 px-2 py-0.5 text-xs text-rust">
                           liquidatable
                         </span>
                       )}
                     </td>
-                    <td className={p.isLong ? "text-emerald-400" : "text-red-400"}>
+                    <td className={p.isLong ? "text-field" : "text-rust"}>
                       {p.isLong ? "Long" : "Short"}
                     </td>
-                    <td className="text-right text-white/70">
+                    <td className="text-right text-bone/70">
                       {formatETH(p.sizeEth)} ETH
                     </td>
-                    <td className="text-right text-white/70">
+                    <td className="text-right text-bone/70">
                       {formatUsdPrice(p.entryPrice)}
                     </td>
                     <td
                       className={
                         "text-right " +
                         (p.pnl === null
-                          ? "text-white/30"
+                          ? "text-bone/30"
                           : pnlPos
-                            ? "text-emerald-400"
-                            : "text-red-400")
+                            ? "text-field"
+                            : "text-rust")
                       }
                     >
                       {p.pnl === null
                         ? "stale"
                         : `${pnlPos ? "+" : ""}${formatETH(p.pnl, 6)}`}
                     </td>
-                    <td className="text-right text-white/50">
+                    <td className="text-right text-bone/50">
                       {p.borrowFee === null ? "—" : formatETH(p.borrowFee, 6)}
                     </td>
                     <td className="text-right">
@@ -251,14 +251,14 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
                             if (c) setCard(c);
                           }}
                           title={p.pnl === null ? "Price stale" : "Share this position"}
-                          className="rounded-full border border-white/15 px-3 py-1.5 text-xs hover:bg-white/10 disabled:opacity-30"
+                          className="rounded-full border border-bone/15 px-3 py-1.5 text-xs hover:bg-bone/10 disabled:opacity-30"
                         >
                           Card
                         </button>
                         <button
                           disabled={busy}
                           onClick={() => close(p)}
-                          className="rounded-full border border-white/15 px-4 py-1.5 text-xs hover:bg-white/10 disabled:opacity-40"
+                          className="rounded-full border border-bone/15 px-4 py-1.5 text-xs hover:bg-bone/10 disabled:opacity-40"
                         >
                           Close
                         </button>
@@ -290,20 +290,20 @@ function ResultBanner({
       className={
         "mb-4 flex items-start justify-between rounded-2xl border px-5 py-4 " +
         (win
-          ? "border-emerald-400/30 bg-emerald-400/10"
-          : "border-red-400/30 bg-red-400/10")
+          ? "border-field/30 bg-field/10"
+          : "border-rust/30 bg-rust/10")
       }
     >
       <div className="text-sm">
         <div className="font-medium">
           {result.liquidated ? "Liquidated" : "Closed"} {result.symbol} ·{" "}
-          <span className={win ? "text-emerald-300" : "text-red-300"}>
+          <span className={win ? "text-field" : "text-rust"}>
             {win ? "▲ Win" : "▼ Loss"}
           </span>
         </div>
-        <div className="mt-1 text-white/70">
+        <div className="mt-1 text-bone/70">
           Realized PnL{" "}
-          <span className={win ? "text-emerald-300" : "text-red-300"}>
+          <span className={win ? "text-field" : "text-rust"}>
             {win ? "+" : ""}
             {formatETH(result.pnl, 6)} ETH
           </span>{" "}
@@ -317,15 +317,15 @@ function ResultBanner({
           className={
             "rounded-full px-4 py-1.5 text-xs font-medium " +
             (win
-              ? "bg-emerald-400 text-black hover:bg-emerald-300"
-              : "bg-white/10 text-white hover:bg-white/20")
+              ? "bg-field text-soil-950 hover:bg-field/90"
+              : "bg-bone/10 text-bone hover:bg-bone/20")
           }
         >
           {win ? "Share your win" : "Share card"}
         </button>
         <button
           onClick={onDismiss}
-          className="text-white/40 hover:text-white"
+          className="text-bone/40 hover:text-bone"
           aria-label="Dismiss"
         >
           ×

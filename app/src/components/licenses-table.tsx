@@ -48,9 +48,9 @@ export function LicensesTable({ markets }: { markets: MarketInfo[] }) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-white/10">
+    <div className="overflow-x-auto rounded-2xl border border-bone/10">
       <table className="w-full min-w-[640px] text-sm">
-        <thead className="text-left text-xs text-white/40">
+        <thead className="text-left text-xs text-bone/40">
           <tr className="[&>th]:px-4 [&>th]:py-3">
             <th>Commodity</th>
             <th>Holder</th>
@@ -58,7 +58,7 @@ export function LicensesTable({ markets }: { markets: MarketInfo[] }) {
             <th></th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/5">
+        <tbody className="divide-y divide-bone/5">
           {markets.map((m) => {
             const lic = licenses.find((l) => l.id === m.id);
             const isHolder =
@@ -66,16 +66,16 @@ export function LicensesTable({ markets }: { markets: MarketInfo[] }) {
             return (
               <tr key={m.id} className="[&>td]:px-4 [&>td]:py-3">
                 <td className="font-medium">{m.symbol}</td>
-                <td className="text-white/60">
+                <td className="text-bone/60">
                   {!lic?.minted ? (
-                    <span className="text-white/30">unminted</span>
+                    <span className="text-bone/30">unminted</span>
                   ) : isHolder ? (
-                    <span className="text-emerald-400">you</span>
+                    <span className="text-field">you</span>
                   ) : (
                     <span className="font-mono">{truncateAddress(lic.holder!)}</span>
                   )}
                 </td>
-                <td className="text-right text-white/70">
+                <td className="text-right text-bone/70">
                   {formatETH(lic?.accruedFees ?? 0n, 6)} ETH
                 </td>
                 <td className="text-right">
@@ -83,7 +83,7 @@ export function LicensesTable({ markets }: { markets: MarketInfo[] }) {
                     <button
                       disabled={!isConnected || busy}
                       onClick={() => mint(m.id)}
-                      className="rounded-full bg-emerald-400 px-4 py-1.5 text-xs font-medium text-black hover:bg-emerald-300 disabled:opacity-40"
+                      className="rounded-full bg-field px-4 py-1.5 text-xs font-medium text-soil-950 hover:bg-field/90 disabled:opacity-40"
                     >
                       Mint · {formatETH(MINT_PRICE_WEI, 3)} ETH
                     </button>
@@ -91,12 +91,12 @@ export function LicensesTable({ markets }: { markets: MarketInfo[] }) {
                     <button
                       disabled={busy || (lic?.accruedFees ?? 0n) === 0n}
                       onClick={() => claim(m.id)}
-                      className="rounded-full border border-white/15 px-4 py-1.5 text-xs hover:bg-white/10 disabled:opacity-40"
+                      className="rounded-full border border-bone/15 px-4 py-1.5 text-xs hover:bg-bone/10 disabled:opacity-40"
                     >
                       Claim fees
                     </button>
                   ) : (
-                    <span className="text-xs text-white/30">held</span>
+                    <span className="text-xs text-bone/30">held</span>
                   )}
                 </td>
               </tr>
