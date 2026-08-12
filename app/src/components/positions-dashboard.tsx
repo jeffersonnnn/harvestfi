@@ -15,6 +15,7 @@ import { perpEngineAbi, ENGINE_ADDRESS } from "@/lib/contracts";
 import { CHAIN_ID } from "@/lib/chain";
 import { formatUsdPrice, formatETH } from "@/lib/format";
 import { PnlCardModal, type PnlCardData } from "@/components/pnl-card";
+import { reportClose } from "@/lib/indexer";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
@@ -103,6 +104,9 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
             positionId: a.positionId.toString(),
           },
         });
+        // Report the close to the indexer (it reads the receipt for the real PnL) so shared
+        // /card/[id] links show the exact numbers.
+        reportClose(receipt.transactionHash);
       }
     } catch {
       /* non-close tx (e.g. redeem) — no banner */

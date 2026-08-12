@@ -33,6 +33,24 @@ export const engineAbi = [
   },
 ] as const;
 
+// For decoding a close from its transaction receipt (eth_getTransactionReceipt works; eth_getLogs does not).
+export const positionClosedEvent = {
+  type: "event",
+  name: "PositionClosed",
+  inputs: [
+    { name: "positionId", type: "uint256", indexed: true },
+    { name: "trader", type: "address", indexed: true },
+    { name: "commodityId", type: "uint256", indexed: true },
+    { name: "exitPrice", type: "uint256", indexed: false },
+    { name: "pnl", type: "int256", indexed: false },
+    { name: "closeFee", type: "uint256", indexed: false },
+    { name: "borrowFee", type: "uint256", indexed: false },
+    { name: "liqFee", type: "uint256", indexed: false },
+    { name: "payout", type: "uint256", indexed: false },
+    { name: "liquidated", type: "bool", indexed: false },
+  ],
+} as const;
+
 export const oracleAbi = [
   {
     type: "function",

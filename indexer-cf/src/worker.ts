@@ -1,5 +1,5 @@
-import { createPublicClient, http, defineChain } from "viem";
-import { engineAbi, oracleAbi, registryAbi } from "./abi";
+import { createPublicClient, http, defineChain, parseEventLogs } from "viem";
+import { engineAbi, oracleAbi, registryAbi, positionClosedEvent } from "./abi";
 
 export interface Env {
   DB: D1Database;
@@ -121,10 +121,35 @@ async function indexTick(env: Env): Promise<void> {
 // ---- read API (frontend) ----
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "content-type",
   "Content-Type": "application/json",
 };
 const json = (data: unknown) => new Response(JSON.stringify(data), { headers: CORS });
+
+// Record a close from its transaction receipt: fetch the receipt (works even though eth_getLogs
+// doesn't), decode the real PositionClosed event, and write the realized PnL/exit/payout. Trustless —
+// the values come from the on-chain receipt, not the caller.
+async function recordClose(env: Env, txHash: string): Promise<Response> {
+  if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) return json({ error: "bad txHash" });
+  const receipt = await client(env).getTransactionReceipt({ hash: txHash as `0x${string}` });
+  const events = parseEventLogs({ abi: [positionClosedEvent], logs: receipt.logs, eventName: "PositionClosed" });
+  if (events.length === 0) return json({ error: "no PositionClosed in tx" });
+
+  const stmts = events.map((e) => {
+    const a = e.args as unknown as {
+      positionId: bigint; exitPrice: bigint; pnl: bigint; payout: bigint; liquidated: boolean;
+    };
+    return env.DB.prepare(
+      "UPDATE positions SET status='closed', exit_price=?, pnl=?, payout=?, liquidated=?, closed_at=? WHERE id=?",
+    ).bind(
+      a.exitPrice.toString(), a.pnl.toString(), a.payout.toString(), a.liquidated ? 1 : 0,
+      Math.floor(Date.now() / 1000), a.positionId.toString(),
+    );
+  });
+  await env.DB.batch(stmts);
+  return json({ ok: true, closed: events.length });
+}
 
 async function handleApi(req: Request, env: Env): Promise<Response> {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
@@ -132,6 +157,11 @@ async function handleApi(req: Request, env: Env): Promise<Response> {
   const p = url.pathname;
 
   if (p === "/" || p === "/health") return json({ ok: true });
+
+  if (p === "/close" && req.method === "POST") {
+    const body = (await req.json().catch(() => ({}))) as { txHash?: string };
+    return recordClose(env, body.txHash ?? "");
+  }
 
   if (p === "/positions") {
     const trader = (url.searchParams.get("trader") ?? "").toLowerCase();
@@ -166,6 +196,10 @@ export default {
     ctx.waitUntil(indexTick(env));
   },
   async fetch(req: Request, env: Env): Promise<Response> {
-    return handleApi(req, env);
+    try {
+      return await handleApi(req, env);
+    } catch (e) {
+      return json({ error: String((e as Error)?.message ?? e).slice(0, 140) });
+    }
   },
 };

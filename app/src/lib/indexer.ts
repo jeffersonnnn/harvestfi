@@ -43,3 +43,17 @@ export const fetchPriceHistory = (market: number, limit = 48) =>
 
 export const fetchPosition = (id: string) =>
   getJson<IndexedPosition | null>(`/position/${id}`, null);
+
+// Tell the indexer a position closed, by tx hash — it reads the receipt for the real realized PnL
+// (so shared /card/[id] links show the exact numbers). Fire-and-forget.
+export async function reportClose(txHash: string): Promise<void> {
+  try {
+    await fetch(`${INDEXER_URL}/close`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ txHash }),
+    });
+  } catch {
+    /* best-effort */
+  }
+}
