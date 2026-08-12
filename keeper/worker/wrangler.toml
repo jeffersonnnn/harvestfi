@@ -3,6 +3,8 @@ main = "worker.ts"
 compatibility_date = "2024-09-23"
 # Needed: the shared keeper modules use Node APIs (process.env, node crypto via viem).
 compatibility_flags = ["nodejs_compat"]
+# Cron-only worker: no public HTTP endpoint, so no workers.dev subdomain needed.
+workers_dev = false
 
 # Fire one tick every minute (Cloudflare cron min granularity). This replaces the Node setInterval loop.
 [triggers]
