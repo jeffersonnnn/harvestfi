@@ -61,9 +61,15 @@ export const simulatedSource: PriceSource = {
     },
 };
 
-/// Trading Economics official API adapter. Requires TE_API_KEY. NOTE: the exact response field
-/// mapping depends on your TE plan — verify `Symbol`/`Name`/`Last` against your account's response
-/// and adjust the match below. Scraping the public page instead is fragile and may violate TE's ToS.
+/// Trading Economics official API adapter (the chosen production source — serves all 13 commodities
+/// incl. a continuous front-month grain series, which the free feeds do not). Requires TE_API_KEY.
+///
+/// Verified live (2026-08): `/markets/commodities` returns one row per commodity carrying a stable
+/// `URL` of the form `/commodity/<slug>` that maps 1:1 to our `teSlug` (all 13 resolve), a `Last`
+/// price, and a `unit` ("USD/Bbl", "USd/Bu", …) whose USd-prefix == US cents, matching the currency in
+/// commodities.ts. So we match on the URL slug (exact — far more robust than a name substring) and
+/// return `Last`; the existing normalize step applies the cents/dollars split. A `USd/...` unit that
+/// disagrees with our recorded currency is warned about (a guard against TE changing a quote unit).
 export const tradingEconomicsSource: PriceSource = {
     name: "tradingeconomics",
     async fetchPrices(specs) {
@@ -72,26 +78,36 @@ export const tradingEconomicsSource: PriceSource = {
         }
         const url = `https://api.tradingeconomics.com/markets/commodities?c=${config.teApiKey}&f=json`;
         const res = await fetch(url);
-        if (!res.ok) throw new Error(`TE fetch failed: ${res.status}`);
+        if (!res.ok) throw new Error(`TE fetch failed: ${res.status} ${res.statusText}`);
         const rows = (await res.json()) as Array<Record<string, unknown>>;
 
-        // Index rows by a lowercased name/symbol for loose matching against teSlug.
-        const byKey = new Map<string, number>();
+        // Index rows by their /commodity/<slug> URL — an exact, stable key that matches our teSlug.
+        const bySlug = new Map<string, Record<string, unknown>>();
         for (const row of rows) {
-            const name = String(row["Symbol"] ?? row["Name"] ?? "").toLowerCase();
-            const last = Number(row["Last"]);
-            if (name && Number.isFinite(last)) byKey.set(name, last);
+            const m = /\/commodity\/([a-z0-9-]+)/.exec(String(row["URL"] ?? ""));
+            if (m) bySlug.set(m[1], row);
         }
 
         const out = new Map<string, number>();
         for (const s of specs) {
-            const key = s.teSlug.toLowerCase().replace(/-/g, " ");
-            for (const [k, v] of byKey) {
-                if (k.includes(key) || key.includes(k)) {
-                    out.set(s.symbol, v);
-                    break;
-                }
+            const row = bySlug.get(s.teSlug);
+            if (!row) {
+                console.warn(`[keeper] TE: no row for ${s.symbol} (slug ${s.teSlug})`);
+                continue;
             }
+            const last = Number(row["Last"]);
+            if (!Number.isFinite(last) || last <= 0) {
+                console.warn(`[keeper] TE: bad Last for ${s.symbol}: ${row["Last"]}`);
+                continue;
+            }
+            // Defensive unit check: TE "USd/..." means US cents; must agree with our recorded currency.
+            const teIsCents = String(row["unit"] ?? "").startsWith("USd");
+            if (teIsCents !== (s.currency === "USd")) {
+                console.warn(
+                    `[keeper] TE: unit "${row["unit"]}" disagrees with ${s.symbol} currency=${s.currency} — check commodities.ts`,
+                );
+            }
+            out.set(s.symbol, last);
         }
         return out;
     },
