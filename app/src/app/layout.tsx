@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/header";
 import { NetworkBanner } from "@/components/network-banner";
+import { BRAND } from "@/lib/brand";
 
 const display = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap" });
 const body = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-hanken", display: "swap" });
@@ -15,7 +16,7 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "The Grain Exchange — Perpetuals on real farm commodities",
+  title: `${BRAND.name} — ${BRAND.tagline}`,
   description:
     "Trade perpetual futures on corn, wheat, coffee, cocoa and 19 more real-world crops. Or own a market's license NFT and earn 70% of its fees.",
 };
