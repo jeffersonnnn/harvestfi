@@ -36,6 +36,40 @@ function Play({ className = "" }: { className?: string }) {
     </svg>
   );
 }
+function CopyIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+    </svg>
+  );
+}
+
+/// Contract-address chip. Copies the value on click (placeholder "Coming Soon" until the CA exists).
+const CONTRACT_ADDRESS = "Coming Soon";
+function CopyCA() {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(CONTRACT_ADDRESS);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard blocked */
+    }
+  }
+  return (
+    <button
+      onClick={copy}
+      title="Copy contract address"
+      className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 backdrop-blur-sm transition-colors hover:border-white/40 hover:bg-white/10"
+    >
+      <span className="label text-white/50">CA</span>
+      <span className="font-mono text-xs text-white/90">{copied ? "Copied ✓" : CONTRACT_ADDRESS}</span>
+      <CopyIcon className="h-3.5 w-3.5 text-white/50" />
+    </button>
+  );
+}
 
 export function HomeHero() {
   const { markets } = useMarkets();
@@ -155,6 +189,8 @@ export function HomeHero() {
               How it works
             </Link>
           </div>
+
+          <CopyCA />
 
           {liveCount > 0 && (
             <p className="label mt-7 flex items-center gap-2 text-white/60">
