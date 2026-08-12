@@ -8,7 +8,8 @@ import { IS_TESTNET } from "@/lib/chain";
 import { BRAND } from "@/lib/brand";
 
 const NAV = [
-  { href: "/", label: "Markets" },
+  { href: "/markets", label: "Markets" },
+  { href: "/portfolio", label: "Portfolio" },
   { href: "/pool", label: "Pool" },
   { href: "/licenses", label: "Licenses" },
 ];
@@ -34,7 +35,10 @@ export function Header() {
           </Link>
           <nav className="hidden items-center gap-1 sm:flex">
             {NAV.map((n) => {
-              const active = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
+              const active =
+                n.href === "/markets"
+                  ? pathname.startsWith("/markets") || pathname.startsWith("/trade")
+                  : pathname.startsWith(n.href);
               return (
                 <Link
                   key={n.href}
