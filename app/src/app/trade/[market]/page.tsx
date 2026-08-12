@@ -36,8 +36,8 @@ export default function TradePage() {
   return (
     <div className="mx-auto max-w-6xl px-5 py-6 sm:px-8">
       {/* Header */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-5">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
           <MarketSwitcher current={market} markets={markets} />
           <div className="flex flex-col">
             <span className="tnum text-2xl font-medium leading-none">
@@ -58,8 +58,8 @@ export default function TradePage() {
       </div>
 
       {/* Terminal grid */}
-      <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-5">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0 space-y-5">
           <PriceChart points={points} />
           <PositionsDashboard markets={markets} />
         </div>
