@@ -22,8 +22,12 @@ export function TradePanel({ market, onClose }: { market: MarketInfo; onClose: (
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
   const queryClient = useQueryClient();
   useEffect(() => {
-    if (isSuccess) queryClient.invalidateQueries();
-  }, [isSuccess, queryClient]);
+    if (!isSuccess) return;
+    queryClient.invalidateQueries();
+    // Show "Opened ✓" briefly, then close the modal so the trader is back at the board.
+    const t = setTimeout(onClose, 1100);
+    return () => clearTimeout(t);
+  }, [isSuccess, queryClient, onClose]);
 
   const marginNum = Number(margin);
   const valid = marginNum > 0 && Number.isFinite(marginNum);
