@@ -100,11 +100,13 @@ export const tradingEconomicsSource: PriceSource = {
                 console.warn(`[keeper] TE: bad Last for ${s.symbol}: ${row["Last"]}`);
                 continue;
             }
-            // Defensive unit check: TE "USd/..." means US cents; must agree with our recorded currency.
-            const teIsCents = String(row["unit"] ?? "").startsWith("USd");
+            // Defensive unit check: TE writes US cents as "USd/..." OR "USD Cents / ..." (e.g. rubber);
+            // either must agree with our recorded currency.
+            const teUnit = String(row["unit"] ?? "");
+            const teIsCents = teUnit.startsWith("USd") || /cents/i.test(teUnit);
             if (teIsCents !== (s.currency === "USd")) {
                 console.warn(
-                    `[keeper] TE: unit "${row["unit"]}" disagrees with ${s.symbol} currency=${s.currency} — check commodities.ts`,
+                    `[keeper] TE: unit "${teUnit}" disagrees with ${s.symbol} currency=${s.currency} — check commodities.ts`,
                 );
             }
             out.set(s.symbol, last);

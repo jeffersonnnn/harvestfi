@@ -17,6 +17,9 @@ keeper/dist/
 **/.env
 **/.env.local
 **/.env.*.local
+# Cloudflare Worker local-dev secrets
+**/.dev.vars
+**/.dev.vars.*
 
 # Editor / OS cruft
 .DS_Store
