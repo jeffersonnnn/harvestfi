@@ -61,17 +61,11 @@ contract Deploy is Script {
         console2.log("PerpEngine:       ", address(engine));
     }
 
-    /// @dev Starter basket across categories. Prices are posted later by the keeper (1e8 USD).
+    /// @dev The market set: all 23 agricultural markets (this is a farm-commodities perp DEX).
+    ///      Order MUST match keeper commodities.ts ids 0–22. Lower leverage, OI-capped (thin markets).
+    ///      Fighters first (ids 0–6), then the rest. Prices are posted later by the keeper (1e8 USD).
     function _seedCommodities(CommodityRegistry registry) internal {
-        // Metals: higher leverage, tighter maintenance.
-        _list(registry, "GOLD", "t.oz", "Metals", 20, 300, 0);
-        _list(registry, "SILVER", "t.oz", "Metals", 20, 300, 0);
-        _list(registry, "COPPER", "Lbs", "Metals", 20, 300, 0);
-        _list(registry, "PLATINUM", "t.oz", "Metals", 15, 400, 0);
-        // Energy.
-        _list(registry, "CRUDE_OIL", "Bbl", "Energy", 15, 400, 0);
-        _list(registry, "NATURAL_GAS", "MMBtu", "Energy", 10, 500, 0);
-        // Agricultural / grains: lower leverage, OI-capped (thinner markets).
+        // Launch fighters.
         _list(registry, "CORN", "Bu", "Agricultural", 10, 500, 500 ether);
         _list(registry, "WHEAT", "Bu", "Agricultural", 10, 500, 500 ether);
         _list(registry, "RICE", "cwt", "Agricultural", 10, 500, 300 ether);
@@ -79,6 +73,23 @@ contract Deploy is Script {
         _list(registry, "COFFEE", "Lbs", "Agricultural", 10, 500, 300 ether);
         _list(registry, "SUGAR", "Lbs", "Agricultural", 10, 500, 300 ether);
         _list(registry, "COTTON", "Lbs", "Agricultural", 10, 500, 300 ether);
+        // Rest of agricultural.
+        _list(registry, "OAT", "Bu", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "ORANGE_JUICE", "Lbs", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "CHEESE", "Lbs", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "COCOA", "T", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "LUMBER", "board-ft", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "MILK", "cwt", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "RUBBER", "Kg", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "BUTTER", "T", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "POTATOES", "100kg", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "RAPESEED", "T", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "CANOLA", "T", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "BARLEY", "T", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "SUNFLOWER_OIL", "10kg", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "TEA", "Kg", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "PALM_OIL", "T", "Agricultural", 10, 500, 300 ether);
+        _list(registry, "WOOL", "100kg", "Agricultural", 10, 500, 300 ether);
     }
 
     function _list(

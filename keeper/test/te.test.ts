@@ -2,19 +2,13 @@ import "./env-setup.js"; // MUST be first: sets TE_API_KEY before config.ts read
 import {test, afterEach} from "node:test";
 import assert from "node:assert/strict";
 import {tradingEconomicsSource} from "../src/sources.js";
-import {COMMODITIES, type CommoditySpec} from "../src/commodities.js";
 import {normalizeToE8} from "../src/normalize.js";
+import {spec} from "./specs.js";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
     globalThis.fetch = realFetch;
 });
-
-const spec = (symbol: string): CommoditySpec => {
-    const c = COMMODITIES.find((x) => x.symbol === symbol);
-    if (!c) throw new Error(`no such commodity ${symbol}`);
-    return c;
-};
 
 // Minimal TE /markets/commodities row shape (only the fields the adapter reads).
 function teRow(slug: string, last: number, unit: string) {

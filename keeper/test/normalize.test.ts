@@ -33,9 +33,9 @@ test("non-positive and non-finite raw throw", () => {
     assert.throws(() => normalizeToE8(NaN, "USD"), /non-finite/);
 });
 
-test("commodity map marks grains as cents and metals/rice as dollars", () => {
+test("commodity map marks grains as cents and rice/dairy as dollars", () => {
     assert.equal(COMMODITIES_BY_SYMBOL["CORN"].currency, "USd");
     assert.equal(COMMODITIES_BY_SYMBOL["WHEAT"].currency, "USd");
-    assert.equal(COMMODITIES_BY_SYMBOL["GOLD"].currency, "USD");
+    assert.equal(COMMODITIES_BY_SYMBOL["CHEESE"].currency, "USD");
     assert.equal(COMMODITIES_BY_SYMBOL["RICE"].currency, "USD");
 });

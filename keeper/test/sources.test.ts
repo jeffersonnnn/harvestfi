@@ -1,18 +1,12 @@
 import {test, afterEach} from "node:test";
 import assert from "node:assert/strict";
 import {pythLegToNumber, pythSource} from "../src/sources.js";
-import {COMMODITIES, type CommoditySpec} from "../src/commodities.js";
+import {spec} from "./specs.js";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
     globalThis.fetch = realFetch;
 });
-
-const spec = (symbol: string): CommoditySpec => {
-    const c = COMMODITIES.find((x) => x.symbol === symbol);
-    if (!c) throw new Error(`no such commodity ${symbol}`);
-    return c;
-};
 
 test("pythLegToNumber applies the decimal exponent", () => {
     // GOLD 4084.15 as Pyth mantissa+expo

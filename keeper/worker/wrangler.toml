@@ -1,0 +1,22 @@
+name = "rwa-perps-keeper"
+main = "worker.ts"
+compatibility_date = "2024-09-23"
+# Needed: the shared keeper modules use Node APIs (process.env, node crypto via viem).
+compatibility_flags = ["nodejs_compat"]
+
+# Fire one tick every minute (Cloudflare cron min granularity). This replaces the Node setInterval loop.
+[triggers]
+crons = ["* * * * *"]
+
+# Non-secret config. Fill in the mainnet (or testnet) values before deploy.
+[vars]
+PRICE_SOURCE = "tradingeconomics"
+CHAIN_ID = "4663"
+RPC_URL = "https://rpc.mainnet.chain.robinhood.com"
+ORACLE_ADDRESS = "0x0000000000000000000000000000000000000000"
+REGISTRY_ADDRESS = "0x0000000000000000000000000000000000000000"
+DRY_RUN = "false"
+
+# SECRETS — do NOT put here. Set them encrypted with:
+#   wrangler secret put TE_API_KEY
+#   wrangler secret put PRIVATE_KEY

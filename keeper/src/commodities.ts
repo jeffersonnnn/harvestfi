@@ -7,6 +7,9 @@
 /// No other keeper change. The `id` below is only a fallback ordering for offline dry-runs; on-chain
 /// ids are whatever `registry.list` order assigns.
 ///
+/// SCOPE: agricultural only — the product is a farm-commodities perp DEX. Metals/energy/livestock/
+/// industrial are intentionally NOT here; add them (same pattern) when expanding beyond agriculture.
+///
 /// `currency` is the ACTUAL TE quote currency (the registry stores "USD" for display and cannot be
 /// trusted for this). It drives normalize: "USd" = US cents (÷100), "USD" = dollars, everything else
 /// (EUR/CAD/INR/MYR/AUD/...) is multiplied by a live foreign->USD FX rate. See normalize.ts + fx.ts.
@@ -19,42 +22,35 @@ export interface CommoditySpec {
     unit: string; // display only
 }
 
+// All 23 TE agricultural markets. USd = US cents. FX-quoted ones flagged.
+// The 7 launch "fighters" first (ids 0–6), then the rest — this is also the mainnet list order.
 export const COMMODITIES: CommoditySpec[] = [
-    // --- Metals + Energy (ids 0–5, matching the current testnet registry) ---
-    {id: 0n, symbol: "GOLD", teSlug: "gold", currency: "USD", unit: "t.oz"},
-    {id: 1n, symbol: "SILVER", teSlug: "silver", currency: "USD", unit: "t.oz"},
-    {id: 2n, symbol: "COPPER", teSlug: "copper", currency: "USD", unit: "Lbs"},
-    {id: 3n, symbol: "PLATINUM", teSlug: "platinum", currency: "USD", unit: "t.oz"},
-    {id: 4n, symbol: "CRUDE_OIL", teSlug: "crude-oil", currency: "USD", unit: "Bbl"},
-    {id: 5n, symbol: "NATURAL_GAS", teSlug: "natural-gas", currency: "USD", unit: "MMBtu"},
-
-    // --- Agricultural (all 23 on TE). USd = US cents. FX-quoted ones flagged. ---
-    // The 7 launch "fighters" first (ids 6–12, matching current testnet), then the rest.
-    {id: 6n, symbol: "CORN", teSlug: "corn", currency: "USd", unit: "Bu"},
-    {id: 7n, symbol: "WHEAT", teSlug: "wheat", currency: "USd", unit: "Bu"},
-    {id: 8n, symbol: "RICE", teSlug: "rice", currency: "USD", unit: "cwt"},
-    {id: 9n, symbol: "SOYBEANS", teSlug: "soybeans", currency: "USd", unit: "Bu"},
-    {id: 10n, symbol: "COFFEE", teSlug: "coffee", currency: "USd", unit: "Lbs"},
-    {id: 11n, symbol: "SUGAR", teSlug: "sugar", currency: "USd", unit: "Lbs"},
-    {id: 12n, symbol: "COTTON", teSlug: "cotton", currency: "USd", unit: "Lbs"},
-    // Rest of agricultural — clean USD/USd (no FX):
-    {id: 13n, symbol: "OAT", teSlug: "oat", currency: "USd", unit: "Bu"},
-    {id: 14n, symbol: "ORANGE_JUICE", teSlug: "orange-juice", currency: "USd", unit: "Lbs"},
-    {id: 15n, symbol: "CHEESE", teSlug: "cheese", currency: "USD", unit: "Lbs"},
-    {id: 16n, symbol: "COCOA", teSlug: "cocoa", currency: "USD", unit: "T"},
-    {id: 17n, symbol: "LUMBER", teSlug: "lumber", currency: "USD", unit: "board-ft"},
-    {id: 18n, symbol: "MILK", teSlug: "milk", currency: "USD", unit: "cwt"},
-    {id: 19n, symbol: "RUBBER", teSlug: "rubber", currency: "USd", unit: "Kg"}, // TE unit "USD Cents / Kg" = cents
-    // Agricultural quoted in FOREIGN currency — require the FX path (normalize applies foreign->USD):
-    {id: 20n, symbol: "BUTTER", teSlug: "butter", currency: "EUR", unit: "T"},
-    {id: 21n, symbol: "POTATOES", teSlug: "potatoes", currency: "EUR", unit: "100kg"},
-    {id: 22n, symbol: "RAPESEED", teSlug: "rapeseed-oil", currency: "EUR", unit: "T"},
-    {id: 23n, symbol: "CANOLA", teSlug: "canola", currency: "CAD", unit: "T"},
-    {id: 24n, symbol: "BARLEY", teSlug: "barley", currency: "INR", unit: "T"},
-    {id: 25n, symbol: "SUNFLOWER_OIL", teSlug: "sunflower-oil", currency: "INR", unit: "10kg"},
-    {id: 26n, symbol: "TEA", teSlug: "tea", currency: "INR", unit: "Kg"},
-    {id: 27n, symbol: "PALM_OIL", teSlug: "palm-oil", currency: "MYR", unit: "T"},
-    {id: 28n, symbol: "WOOL", teSlug: "wool", currency: "AUD", unit: "100kg"},
+    // --- Launch fighters ---
+    {id: 0n, symbol: "CORN", teSlug: "corn", currency: "USd", unit: "Bu"},
+    {id: 1n, symbol: "WHEAT", teSlug: "wheat", currency: "USd", unit: "Bu"},
+    {id: 2n, symbol: "RICE", teSlug: "rice", currency: "USD", unit: "cwt"},
+    {id: 3n, symbol: "SOYBEANS", teSlug: "soybeans", currency: "USd", unit: "Bu"},
+    {id: 4n, symbol: "COFFEE", teSlug: "coffee", currency: "USd", unit: "Lbs"},
+    {id: 5n, symbol: "SUGAR", teSlug: "sugar", currency: "USd", unit: "Lbs"},
+    {id: 6n, symbol: "COTTON", teSlug: "cotton", currency: "USd", unit: "Lbs"},
+    // --- Rest of agricultural: clean USD/USd (no FX) ---
+    {id: 7n, symbol: "OAT", teSlug: "oat", currency: "USd", unit: "Bu"},
+    {id: 8n, symbol: "ORANGE_JUICE", teSlug: "orange-juice", currency: "USd", unit: "Lbs"},
+    {id: 9n, symbol: "CHEESE", teSlug: "cheese", currency: "USD", unit: "Lbs"},
+    {id: 10n, symbol: "COCOA", teSlug: "cocoa", currency: "USD", unit: "T"},
+    {id: 11n, symbol: "LUMBER", teSlug: "lumber", currency: "USD", unit: "board-ft"},
+    {id: 12n, symbol: "MILK", teSlug: "milk", currency: "USD", unit: "cwt"},
+    {id: 13n, symbol: "RUBBER", teSlug: "rubber", currency: "USd", unit: "Kg"}, // TE unit "USD Cents / Kg" = cents
+    // --- Agricultural quoted in FOREIGN currency — require the FX path (normalize applies foreign->USD) ---
+    {id: 14n, symbol: "BUTTER", teSlug: "butter", currency: "EUR", unit: "T"},
+    {id: 15n, symbol: "POTATOES", teSlug: "potatoes", currency: "EUR", unit: "100kg"},
+    {id: 16n, symbol: "RAPESEED", teSlug: "rapeseed-oil", currency: "EUR", unit: "T"},
+    {id: 17n, symbol: "CANOLA", teSlug: "canola", currency: "CAD", unit: "T"},
+    {id: 18n, symbol: "BARLEY", teSlug: "barley", currency: "INR", unit: "T"},
+    {id: 19n, symbol: "SUNFLOWER_OIL", teSlug: "sunflower-oil", currency: "INR", unit: "10kg"},
+    {id: 20n, symbol: "TEA", teSlug: "tea", currency: "INR", unit: "Kg"},
+    {id: 21n, symbol: "PALM_OIL", teSlug: "palm-oil", currency: "MYR", unit: "T"},
+    {id: 22n, symbol: "WOOL", teSlug: "wool", currency: "AUD", unit: "100kg"},
 ];
 
 export const COMMODITIES_BY_SYMBOL: Record<string, CommoditySpec> = Object.fromEntries(

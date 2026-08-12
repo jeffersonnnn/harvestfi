@@ -1,20 +1,15 @@
 import {test, afterEach} from "node:test";
 import assert from "node:assert/strict";
 import {yahooSource, _resetYahooSession} from "../src/sources.js";
-import {COMMODITIES, COMMODITIES_BY_SYMBOL, type CommoditySpec} from "../src/commodities.js";
+import {COMMODITIES_BY_SYMBOL} from "../src/commodities.js";
 import {normalizeToE8} from "../src/normalize.js";
+import {spec} from "./specs.js";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
     globalThis.fetch = realFetch;
     _resetYahooSession(); // don't leak a cached session between tests
 });
-
-const spec = (symbol: string): CommoditySpec => {
-    const c = COMMODITIES.find((x) => x.symbol === symbol);
-    if (!c) throw new Error(`no such commodity ${symbol}`);
-    return c;
-};
 
 // Serve the whole Yahoo handshake + chart flow. `chart(ticker)` decides each chart response so a test
 // can inject a price, a "no data" (result:null), or an HTTP status. Session endpoints always succeed.
