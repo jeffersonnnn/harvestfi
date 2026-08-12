@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { type MarketInfo } from "@/hooks/use-markets";
+import { usePriceHistory } from "@/hooks/use-price-history";
+import { Sparkline } from "@/components/sparkline";
 import { formatUsdPrice, formatETH } from "@/lib/format";
 import { marketMeta, prettyName, GROUPS, type Group } from "@/lib/commodities-meta";
 
@@ -61,6 +63,7 @@ export function MarketsTable({
               <th>Commodity</th>
               <th>Group</th>
               <th className="text-right">Price</th>
+              <th className="text-center">Trend</th>
               <th className="text-right">Max lev.</th>
               <th className="text-right">Open interest · L / S</th>
               <th></th>
@@ -69,74 +72,81 @@ export function MarketsTable({
           <tbody>
             {isLoading && markets.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-bone/40">
+                <td colSpan={7} className="px-4 py-12 text-center text-sm text-bone/40">
                   Reading the board…
                 </td>
               </tr>
             )}
             {!isLoading && filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-bone/40">
+                <td colSpan={7} className="px-4 py-12 text-center text-sm text-bone/40">
                   No commodities match.
                 </td>
               </tr>
             )}
-            {filtered.map((m) => {
-              const meta = marketMeta(m.symbol);
-              return (
-                <tr
-                  key={m.id}
-                  className="group border-b border-bone/5 transition-colors last:border-0 hover:bg-bone/[0.02] [&>td]:px-4 [&>td]:py-3.5"
-                >
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <span className="grid h-8 w-8 place-items-center rounded-md bg-soil-800 text-base">
-                        {meta.glyph}
-                      </span>
-                      <div>
-                        <div className="font-medium leading-tight">{prettyName(m.symbol)}</div>
-                        <div className="tnum text-xs text-bone/40">
-                          {m.symbol} · /{m.unit}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="label rounded-full border border-bone/15 px-2 py-0.5 text-bone/55">
-                      {meta.group}
-                    </span>
-                  </td>
-                  <td className="text-right">
-                    {m.stale ? (
-                      <span className="label rounded-full bg-wheat/10 px-2 py-0.5 text-wheat/90">
-                        stale
-                      </span>
-                    ) : (
-                      <span className="tnum text-[0.95rem]">{formatUsdPrice(m.priceE8)}</span>
-                    )}
-                  </td>
-                  <td className="tnum text-right text-bone/60">{m.maxLeverageX}×</td>
-                  <td className="tnum text-right text-xs text-bone/55">
-                    <span className="text-field">{formatETH(m.longOI)}</span>
-                    <span className="text-bone/25"> / </span>
-                    <span className="text-rust">{formatETH(m.shortOI)}</span>
-                  </td>
-                  <td className="text-right">
-                    <button
-                      disabled={m.stale}
-                      onClick={() => onTrade(m)}
-                      className="rounded-full bg-bone/10 px-4 py-1.5 text-xs font-semibold text-bone transition-colors hover:bg-wheat hover:text-soil-950 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-bone/10 disabled:hover:text-bone"
-                    >
-                      Trade
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+            {filtered.map((m) => (
+              <MarketRow key={m.id} m={m} onTrade={onTrade} />
+            ))}
           </tbody>
         </table>
       </div>
     </div>
+  );
+}
+
+function MarketRow({ m, onTrade }: { m: MarketInfo; onTrade: (m: MarketInfo) => void }) {
+  const meta = marketMeta(m.symbol);
+  const { data: history } = usePriceHistory(m.id);
+  const values = (history ?? []).map((p) => Number(p.price));
+
+  return (
+    <tr className="group border-b border-bone/5 transition-colors last:border-0 hover:bg-bone/[0.02] [&>td]:px-4 [&>td]:py-3.5">
+      <td>
+        <div className="flex items-center gap-3">
+          <span className="grid h-8 w-8 place-items-center rounded-md bg-soil-800 text-base">
+            {meta.glyph}
+          </span>
+          <div>
+            <div className="font-medium leading-tight">{prettyName(m.symbol)}</div>
+            <div className="tnum text-xs text-bone/40">
+              {m.symbol} · /{m.unit}
+            </div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <span className="label rounded-full border border-bone/15 px-2 py-0.5 text-bone/55">
+          {meta.group}
+        </span>
+      </td>
+      <td className="text-right">
+        {m.stale ? (
+          <span className="label rounded-full bg-wheat/10 px-2 py-0.5 text-wheat/90">stale</span>
+        ) : (
+          <span className="tnum text-[0.95rem]">{formatUsdPrice(m.priceE8)}</span>
+        )}
+      </td>
+      <td>
+        <div className="flex justify-center text-bone/50">
+          <Sparkline values={values} />
+        </div>
+      </td>
+      <td className="tnum text-right text-bone/60">{m.maxLeverageX}×</td>
+      <td className="tnum text-right text-xs text-bone/55">
+        <span className="text-field">{formatETH(m.longOI)}</span>
+        <span className="text-bone/25"> / </span>
+        <span className="text-rust">{formatETH(m.shortOI)}</span>
+      </td>
+      <td className="text-right">
+        <button
+          disabled={m.stale}
+          onClick={() => onTrade(m)}
+          className="rounded-full bg-bone/10 px-4 py-1.5 text-xs font-semibold text-bone transition-colors hover:bg-wheat hover:text-soil-950 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-bone/10 disabled:hover:text-bone"
+        >
+          Trade
+        </button>
+      </td>
+    </tr>
   );
 }
 

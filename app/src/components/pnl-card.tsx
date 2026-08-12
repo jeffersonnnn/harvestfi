@@ -17,6 +17,7 @@ export interface PnlCardData {
   realized: boolean; // true = closed, false = live/open
   liquidated?: boolean;
   handle?: string; // wallet address or @handle, optional
+  positionId?: string; // for the shareable /card/[id] unfurl link
 }
 
 const fmtEth = (wei: bigint) => {
@@ -142,6 +143,19 @@ export function PnlCardModal({
   const cardRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState<null | "download" | "copy">(null);
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  async function copyLink() {
+    if (!data.positionId) return;
+    const url = `${window.location.origin}/card/${data.positionId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1800);
+    } catch {
+      /* clipboard blocked */
+    }
+  }
 
   async function render(): Promise<Blob | null> {
     if (!cardRef.current) return null;
@@ -210,6 +224,14 @@ export function PnlCardModal({
           >
             {copied ? "Copied ✓" : busy === "copy" ? "Rendering…" : "Copy image"}
           </button>
+          {data.positionId && (
+            <button
+              onClick={copyLink}
+              className="rounded-full border border-white/20 px-5 py-2 text-sm hover:bg-white/10"
+            >
+              {linkCopied ? "Link copied ✓" : "Copy link"}
+            </button>
+          )}
           <button
             onClick={onClose}
             className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/60 hover:bg-white/5"

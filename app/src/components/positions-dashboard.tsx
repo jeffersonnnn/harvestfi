@@ -72,6 +72,7 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
       });
       if (events.length > 0) {
         const a = events[0].args as unknown as {
+          positionId: bigint;
           commodityId: bigint;
           exitPrice: bigint;
           pnl: bigint;
@@ -99,6 +100,7 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
             realized: true,
             liquidated: a.liquidated,
             handle: address,
+            positionId: a.positionId.toString(),
           },
         });
       }
@@ -138,6 +140,7 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
       pnlPct: pnlPctOf(p.pnl, p.collateral),
       realized: false,
       handle: address,
+      positionId: p.id.toString(),
     };
   }
 
