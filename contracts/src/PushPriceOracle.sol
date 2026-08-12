@@ -31,10 +31,13 @@ contract PushPriceOracle is IPushPriceOracle, Ownable {
     mapping(uint256 => Price) private _prices;
     address public trustedSigner;
     uint64 public maxPriceAge;
+    uint256 public maxDeviationBps; // circuit-breaker band vs the last price; 0 = disabled
 
     event SignerUpdated(address indexed signer);
     event MaxPriceAgeUpdated(uint64 maxPriceAge);
+    event MaxDeviationUpdated(uint256 bps);
     event PricePosted(uint256 indexed id, int256 price, uint64 timestamp);
+    event PriceRejected(uint256 indexed id, int256 price, int256 lastPrice, uint64 timestamp);
 
     constructor(address initialOwner, address signer_, uint64 maxPriceAge_) Ownable(initialOwner) {
         require(signer_ != address(0), "signer=0");
@@ -55,6 +58,14 @@ contract PushPriceOracle is IPushPriceOracle, Ownable {
         emit MaxPriceAgeUpdated(maxPriceAge_);
     }
 
+    /// @notice Set the circuit-breaker band in bps (0 disables). A posted price that jumps more than
+    ///         this from the last stored price for the same id is dropped, guarding against a
+    ///         compromised signer or bad print pushing a wild value. See {postPrice}.
+    function setMaxDeviation(uint256 bps) external onlyOwner {
+        maxDeviationBps = bps;
+        emit MaxDeviationUpdated(bps);
+    }
+
     /// @notice Digest a keeper must sign for a given (id, price, timestamp).
     function priceDigest(uint256 id, int256 price, uint64 timestamp) public view returns (bytes32) {
         return keccak256(abi.encode(block.chainid, address(this), id, price, timestamp)).toEthSignedMessageHash();
@@ -69,6 +80,20 @@ contract PushPriceOracle is IPushPriceOracle, Ownable {
 
         address recovered = priceDigest(id, price, timestamp).recover(signature);
         require(recovered == trustedSigner, "bad signer");
+
+        // Circuit-breaker: DROP (do not revert) a price that jumps more than maxDeviationBps from the
+        // last stored one, so a compromised signer or bad print can't push a wild value that mass-
+        // liquidates traders or drains the pool. A dropped market keeps its last price and ages out via
+        // maxPriceAge (stale => trading disabled) until the feed is back in band or the owner widens
+        // it. Skipping instead of reverting means one bad market can't block a whole postPrices batch.
+        if (maxDeviationBps != 0 && p.price > 0) {
+            uint256 last = uint256(p.price);
+            uint256 diff = uint256(price) > last ? uint256(price) - last : last - uint256(price);
+            if (diff * 10_000 > last * maxDeviationBps) {
+                emit PriceRejected(id, price, p.price, timestamp);
+                return;
+            }
+        }
 
         p.price = price;
         p.timestamp = timestamp;

@@ -117,4 +117,83 @@ contract PushPriceOracleTest is OracleSigner {
         vm.expectRevert();
         oracle.setSigner(address(0x1234));
     }
+
+    // --- price-deviation circuit-breaker ---
+
+    event PriceRejected(uint256 indexed id, int256 price, int256 lastPrice, uint64 timestamp);
+
+    function test_deviation_disabledByDefault_allowsAnyJump() public {
+        uint64 ts0 = uint64(block.timestamp);
+        _post(1, 100e8, ts0, signerPk);
+        uint64 ts1 = ts0 + 60;
+        vm.warp(ts1);
+        _post(1, 500e8, ts1, signerPk); // 5x jump, guard disabled (0)
+        assertEq(oracle.getFreshPrice(1), 500e8);
+    }
+
+    function test_deviation_withinBand_accepted() public {
+        oracle.setMaxDeviation(1000); // 10%
+        uint64 ts0 = uint64(block.timestamp);
+        _post(1, 100e8, ts0, signerPk);
+        uint64 ts1 = ts0 + 60;
+        vm.warp(ts1);
+        _post(1, 105e8, ts1, signerPk); // +5%, within band
+        assertEq(oracle.getFreshPrice(1), 105e8);
+    }
+
+    function test_deviation_beyondBand_dropped() public {
+        oracle.setMaxDeviation(1000); // 10%
+        vm.warp(2_000_000);
+        _post(1, 100e8, 2_000_000, signerPk);
+        vm.warp(2_000_060);
+
+        vm.expectEmit(true, false, false, true);
+        emit PriceRejected(1, 130e8, 100e8, 2_000_060);
+        _post(1, 130e8, 2_000_060, signerPk); // +30%, dropped (no revert)
+
+        // Price and timestamp are unchanged — the outlier never landed.
+        (int256 p, uint64 t) = oracle.getPrice(1);
+        assertEq(p, 100e8);
+        assertEq(t, 2_000_000);
+    }
+
+    function test_deviation_firstPriceAlwaysAccepted() public {
+        oracle.setMaxDeviation(1000);
+        uint64 ts = uint64(block.timestamp);
+        _post(9, 4000e8, ts, signerPk); // no prior price => band does not apply
+        assertEq(oracle.getFreshPrice(9), 4000e8);
+    }
+
+    function test_deviation_oneBadMarketDoesNotBlockBatch() public {
+        oracle.setMaxDeviation(1000); // 10%
+        uint64 ts = uint64(block.timestamp);
+        _post(1, 100e8, ts, signerPk);
+        _post(2, 100e8, ts, signerPk);
+        vm.warp(block.timestamp + 60);
+        uint64 ts1 = uint64(block.timestamp);
+
+        uint256[] memory ids = new uint256[](2);
+        int256[] memory prices = new int256[](2);
+        uint64[] memory tss = new uint64[](2);
+        bytes[] memory sigs = new bytes[](2);
+        ids[0] = 1;
+        ids[1] = 2;
+        prices[0] = 105e8; // +5%, in band
+        prices[1] = 130e8; // +30%, out of band
+        tss[0] = ts1;
+        tss[1] = ts1;
+        sigs[0] = _signPrice(oracle, signerPk, 1, prices[0], ts1);
+        sigs[1] = _signPrice(oracle, signerPk, 2, prices[1], ts1);
+
+        oracle.postPrices(ids, prices, tss, sigs); // must NOT revert
+
+        assertEq(oracle.getFreshPrice(1), 105e8); // good market updated
+        assertEq(oracle.getFreshPrice(2), 100e8); // bad market kept its last price
+    }
+
+    function test_revert_setMaxDeviation_notOwner() public {
+        vm.prank(address(0xBAD));
+        vm.expectRevert();
+        oracle.setMaxDeviation(500);
+    }
 }
