@@ -38,8 +38,12 @@ async function indexTick(env: Env): Promise<void> {
   const latest = await c.getBlockNumber();
   const last = BigInt(await getMeta(env, "lastBlock", env.START_BLOCK));
   const maxRange = BigInt(env.MAX_RANGE ?? "3000");
-  const from = last + 1n;
-  const to = from + maxRange - 1n > latest ? latest : from + maxRange - 1n;
+  // Scan the recent TAIL up to the tip — the chain is millions of blocks past deploy, so deep history
+  // is not backfilled (positions index going forward). First run covers the last `maxRange` blocks;
+  // after that, only new blocks since the previous tick. maxRange must exceed blocks-per-tick.
+  const tail = latest - maxRange + 1n;
+  const from = last + 1n > tail ? last + 1n : tail;
+  const to = latest;
 
   if (to >= from) {
     const [opened, closed] = await Promise.all([
