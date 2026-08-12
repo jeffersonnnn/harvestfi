@@ -111,5 +111,6 @@ export function useMarkets() {
     };
   });
 
-  return { markets, count, maxPriceAge, isLoading, refetch };
+  // Only surface LISTED markets — delisted ones (e.g. the removed metals/energy) stay hidden.
+  return { markets: markets.filter((m) => m.listed), count, maxPriceAge, isLoading, refetch };
 }
