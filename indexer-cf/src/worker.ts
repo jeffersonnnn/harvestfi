@@ -1,5 +1,5 @@
 import { createPublicClient, http, defineChain } from "viem";
-import { positionOpenedEvent, positionClosedEvent, oracleAbi, registryAbi } from "./abi";
+import { engineAbi, oracleAbi, registryAbi } from "./abi";
 
 export interface Env {
   DB: D1Database;
@@ -34,65 +34,62 @@ async function indexTick(env: Env): Promise<void> {
   const c = client(env);
   const stmts: D1PreparedStatement[] = [];
 
-  // 1) Positions via logs, incremental + range-capped (backfills over successive ticks).
-  const latest = await c.getBlockNumber();
-  const last = BigInt(await getMeta(env, "lastBlock", env.START_BLOCK));
-  const maxRange = BigInt(env.MAX_RANGE ?? "3000");
-  // Scan the recent TAIL up to the tip — the chain is millions of blocks past deploy, so deep history
-  // is not backfilled (positions index going forward). First run covers the last `maxRange` blocks;
-  // after that, only new blocks since the previous tick. maxRange must exceed blocks-per-tick.
-  const tail = latest - maxRange + 1n;
-  const from = last + 1n > tail ? last + 1n : tail;
-  const to = latest;
-
-  if (to >= from) {
-    const [opened, closed] = await Promise.all([
-      c.getLogs({ address: env.ENGINE_ADDRESS, event: positionOpenedEvent, fromBlock: from, toBlock: to }),
-      c.getLogs({ address: env.ENGINE_ADDRESS, event: positionClosedEvent, fromBlock: from, toBlock: to }),
-    ]);
-
-    // Best-effort block timestamps (unique blocks, capped by subrequest budget).
-    const blocks = [...new Set([...opened, ...closed].map((l) => l.blockNumber!))];
-    const cap = Number(env.MAX_BLOCK_META ?? "24");
-    const tsByBlock = new Map<bigint, number>();
-    await Promise.all(
-      blocks.slice(0, cap).map(async (bn) => {
-        const b = await c.getBlock({ blockNumber: bn });
-        tsByBlock.set(bn, Number(b.timestamp));
-      }),
-    );
-
-    for (const l of opened) {
-      const a = l.args as {
-        positionId: bigint; trader: string; commodityId: bigint;
-        isLong: boolean; collateral: bigint; sizeEth: bigint; entryPrice: bigint;
+  // 1) Positions — this RPC returns [] for eth_getLogs, so read positions DIRECTLY: nextPositionId
+  // gives the id space; one multicall of getPosition(0..N-1) reads them all. Open positions have a
+  // non-zero trader; getPosition returns zero once a position is closed (we mark those closed).
+  const nextId = Number(
+    await c.readContract({ address: env.ENGINE_ADDRESS, abi: engineAbi, functionName: "nextPositionId" }),
+  );
+  if (nextId > 0) {
+    const posResults = await c.multicall({
+      allowFailure: true,
+      contracts: Array.from({ length: nextId }, (_, id) => ({
+        address: env.ENGINE_ADDRESS,
+        abi: engineAbi,
+        functionName: "getPosition",
+        args: [BigInt(id)],
+      })),
+    });
+    const ZERO = "0x0000000000000000000000000000000000000000";
+    posResults.forEach((r, id) => {
+      if (r.status !== "success") return;
+      const p = r.result as unknown as {
+        trader: string;
+        commodityId: bigint;
+        isLong: boolean;
+        collateral: bigint;
+        sizeEth: bigint;
+        entryPrice: bigint;
+        openedAt: bigint;
       };
-      stmts.push(
-        env.DB.prepare(
-          `INSERT OR IGNORE INTO positions
-           (id, trader, commodity_id, is_long, collateral, size_eth, entry_price, opened_at, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open')`,
-        ).bind(
-          a.positionId.toString(), a.trader.toLowerCase(), Number(a.commodityId), a.isLong ? 1 : 0,
-          a.collateral.toString(), a.sizeEth.toString(), a.entryPrice.toString(),
-          tsByBlock.get(l.blockNumber!) ?? 0,
-        ),
-      );
-    }
-    for (const l of closed) {
-      const a = l.args as {
-        positionId: bigint; exitPrice: bigint; pnl: bigint; payout: bigint; liquidated: boolean;
-      };
-      stmts.push(
-        env.DB.prepare(
-          `UPDATE positions SET status='closed', exit_price=?, pnl=?, payout=?, liquidated=?, closed_at=? WHERE id=?`,
-        ).bind(
-          a.exitPrice.toString(), a.pnl.toString(), a.payout.toString(), a.liquidated ? 1 : 0,
-          tsByBlock.get(l.blockNumber!) ?? 0, a.positionId.toString(),
-        ),
-      );
-    }
-    stmts.push(env.DB.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('lastBlock', ?)").bind(to.toString()));
+      if (p.trader && p.trader.toLowerCase() !== ZERO) {
+        stmts.push(
+          env.DB.prepare(
+            `INSERT OR REPLACE INTO positions
+             (id, trader, commodity_id, is_long, collateral, size_eth, entry_price, opened_at, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open')`,
+          ).bind(
+            String(id),
+            p.trader.toLowerCase(),
+            Number(p.commodityId),
+            p.isLong ? 1 : 0,
+            p.collateral.toString(),
+            p.sizeEth.toString(),
+            p.entryPrice.toString(),
+            Number(p.openedAt),
+          ),
+        );
+      } else {
+        // Closed on-chain (getPosition zeroed) — flip any row we had to closed. Realized PnL/exit
+        // aren't available from reads (logs are dead); the app captures those from the close receipt.
+        stmts.push(
+          env.DB.prepare("UPDATE positions SET status='closed', closed_at=? WHERE id=? AND status='open'").bind(
+            Math.floor(Date.now() / 1000),
+            String(id),
+          ),
+        );
+      }
+    });
   }
 
   // 2) Price snapshots — read every listed market's current oracle price (one multicall) and store it.
