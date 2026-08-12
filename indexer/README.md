@@ -25,3 +25,5 @@ see `abis/PerpEngineAbi.ts`) but has **not been installed or run**. Ponder's fra
 versions. Before trusting it: `npm install`, then `npm run codegen && npm run dev`, and adapt the
 config/schema syntax to your installed Ponder version if it complains. The **event → column mapping in
 `src/index.ts` is the source of truth**; the framework glue around it is adjustable.
+
+> **Superseded** by `../indexer-cf/` (Cloudflare Worker + D1) — the always-on, no-VPS indexer. Kept for reference.

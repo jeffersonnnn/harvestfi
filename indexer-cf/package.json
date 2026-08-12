@@ -1,0 +1,18 @@
+{
+  "name": "rwa-perps-indexer-cf",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "schema:local": "wrangler d1 execute rwa-perps --local --file=schema.sql",
+    "schema:remote": "wrangler d1 execute rwa-perps --remote --file=schema.sql"
+  },
+  "dependencies": {
+    "viem": "^2.55.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0",
+    "@cloudflare/workers-types": "^4.20240909.0"
+  }
+}

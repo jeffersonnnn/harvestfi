@@ -1,0 +1,27 @@
+name = "rwa-perps-indexer"
+main = "src/worker.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# Index once a minute (positions from logs + a price snapshot per market).
+[triggers]
+crons = ["* * * * *"]
+
+# D1 database. Create it with `wrangler d1 create rwa-perps`, then paste the printed database_id here.
+[[d1_databases]]
+binding = "DB"
+database_name = "rwa-perps"
+database_id = "PASTE_DATABASE_ID_HERE"
+
+# --- ACTIVE: Robinhood TESTNET (46630) ---
+[vars]
+CHAIN_ID = "46630"
+RPC_URL = "https://rpc.testnet.chain.robinhood.com"
+ENGINE_ADDRESS = "0x35B1fe02856BeECC4BC526c93670D988DE9d0343"
+ORACLE_ADDRESS = "0xd3Fa9008eC7511f3d32A1760C3Ea52c58111f140"
+REGISTRY_ADDRESS = "0xFc7e57695D3b44393Ed007e45527e1eaB9Df58D6"
+START_BLOCK = "97312826"
+MAX_RANGE = "3000"      # blocks scanned per tick; backfills over successive runs
+MAX_BLOCK_META = "24"   # cap on getBlock calls/tick (stay under the 50-subrequest limit)
+
+# --- MAINNET (4663): swap CHAIN_ID/RPC/addresses/START_BLOCK at launch ---
