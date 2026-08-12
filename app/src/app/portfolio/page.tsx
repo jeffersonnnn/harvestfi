@@ -34,7 +34,13 @@ export default function PortfolioPage() {
   return (
     <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
       <p className="label text-wheat">Account</p>
-      <h1 className="mb-6 font-display text-3xl font-medium tracking-tight">Portfolio</h1>
+      <h1 className="font-display text-3xl font-medium tracking-tight">Portfolio</h1>
+      <p className="mb-6 mt-2 max-w-xl text-sm text-bone/55">
+        <span className="text-bone/70">Margin</span> is the collateral locked in your open
+        positions. <span className="text-bone/70">Unrealized PnL</span> is their live profit or loss
+        against the pool. <span className="text-bone/70">License earnings</span> are your unclaimed
+        70% fee share.
+      </p>
 
       {/* Stat tiles */}
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-bone/10 bg-bone/10 lg:grid-cols-4">

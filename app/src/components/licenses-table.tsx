@@ -14,6 +14,7 @@ import {
 } from "@/lib/contracts";
 import { CHAIN_ID } from "@/lib/chain";
 import { formatETH, truncateAddress } from "@/lib/format";
+import { marketMeta, prettyName } from "@/lib/commodities-meta";
 
 export function LicensesTable({ markets }: { markets: MarketInfo[] }) {
   const { address, isConnected } = useAccount();
@@ -48,50 +49,81 @@ export function LicensesTable({ markets }: { markets: MarketInfo[] }) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-bone/10">
-      <table className="w-full min-w-[640px] text-sm">
-        <thead className="text-left text-xs text-bone/40">
-          <tr className="[&>th]:px-4 [&>th]:py-3">
+    <div className="overflow-x-auto rounded-2xl border border-bone/10 bg-soil-900/40">
+      <table className="w-full min-w-[680px] border-collapse text-sm">
+        <thead>
+          <tr className="label border-b border-bone/10 text-left text-bone/40 [&>th]:px-4 [&>th]:py-3 [&>th]:font-normal">
             <th>Commodity</th>
             <th>Holder</th>
-            <th className="text-right">Accrued fees</th>
+            <th className="text-right">Accrued fees · your 70%</th>
             <th></th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-bone/5">
+        <tbody>
           {markets.map((m) => {
             const lic = licenses.find((l) => l.id === m.id);
+            const meta = marketMeta(m.symbol);
+            const accrued = lic?.accruedFees ?? 0n;
             const isHolder =
               lic?.holder && address && lic.holder.toLowerCase() === address.toLowerCase();
+            const hasBacklog = !lic?.minted && accrued > 0n;
+
             return (
-              <tr key={m.id} className="[&>td]:px-4 [&>td]:py-3">
-                <td className="font-medium">{m.symbol}</td>
+              <tr
+                key={m.id}
+                className="border-b border-bone/5 transition-colors last:border-0 hover:bg-bone/[0.02] [&>td]:px-4 [&>td]:py-3.5"
+              >
+                {/* Commodity — glyph as the license's visual identity */}
+                <td>
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-9 w-9 place-items-center rounded-md bg-soil-800 text-lg">
+                      {meta.glyph}
+                    </span>
+                    <div>
+                      <div className="font-medium leading-tight">{prettyName(m.symbol)}</div>
+                      <div className="tnum text-xs text-bone/40">
+                        {m.symbol} · License #{m.id}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                {/* Holder */}
                 <td className="text-bone/60">
                   {!lic?.minted ? (
-                    <span className="text-bone/30">unminted</span>
+                    <span className="label rounded-full border border-bone/15 px-2 py-0.5 text-bone/40">
+                      unminted
+                    </span>
                   ) : isHolder ? (
-                    <span className="text-field">you</span>
+                    <span className="label rounded-full bg-field/15 px-2 py-0.5 text-field">you</span>
                   ) : (
-                    <span className="font-mono">{truncateAddress(lic.holder!)}</span>
+                    <span className="tnum text-xs">{truncateAddress(lic.holder!)}</span>
                   )}
                 </td>
-                <td className="text-right text-bone/70">
-                  {formatETH(lic?.accruedFees ?? 0n, 6)} ETH
+
+                {/* Accrued fees (the holder's claimable 70% share) */}
+                <td className="text-right">
+                  <span className="tnum text-bone/80">{formatETH(accrued, 6)} ETH</span>
+                  {hasBacklog && (
+                    <div className="label mt-0.5 text-wheat/80">claimable on mint</div>
+                  )}
                 </td>
+
+                {/* Action */}
                 <td className="text-right">
                   {!lic?.minted ? (
                     <button
                       disabled={!isConnected || busy}
                       onClick={() => mint(m.id)}
-                      className="rounded-full bg-field px-4 py-1.5 text-xs font-medium text-soil-950 hover:bg-field/90 disabled:opacity-40"
+                      className="rounded-full bg-wheat px-4 py-1.5 text-xs font-semibold text-soil-950 transition-colors hover:bg-wheat/90 disabled:opacity-40"
                     >
-                      Mint · {formatETH(MINT_PRICE_WEI, 3)} ETH
+                      Mint · {formatETH(MINT_PRICE_WEI, 2)} ETH
                     </button>
                   ) : isHolder ? (
                     <button
-                      disabled={busy || (lic?.accruedFees ?? 0n) === 0n}
+                      disabled={busy || accrued === 0n}
                       onClick={() => claim(m.id)}
-                      className="rounded-full border border-bone/15 px-4 py-1.5 text-xs hover:bg-bone/10 disabled:opacity-40"
+                      className="rounded-full border border-bone/15 px-4 py-1.5 text-xs transition-colors hover:bg-bone/10 disabled:opacity-40"
                     >
                       Claim fees
                     </button>
