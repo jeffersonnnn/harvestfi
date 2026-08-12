@@ -8,6 +8,7 @@ import { type MarketInfo } from "@/hooks/use-markets";
 import { perpEngineAbi, ENGINE_ADDRESS } from "@/lib/contracts";
 import { CHAIN_ID } from "@/lib/chain";
 import { formatUsdPrice } from "@/lib/format";
+import { Spinner } from "./spinner";
 
 /** Docked order form for the trade terminal. Stays put after a fill (unlike the old modal). */
 export function OrderForm({ market }: { market: MarketInfo }) {
@@ -119,10 +120,11 @@ export function OrderForm({ market }: { market: MarketInfo }) {
         disabled={!isConnected || !valid || busy}
         onClick={submit}
         className={
-          "w-full rounded-xl px-4 py-3 text-sm font-semibold text-soil-950 transition-colors disabled:opacity-40 " +
+          "flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-soil-950 transition-colors disabled:opacity-40 " +
           (isLong ? "bg-field hover:bg-field/90" : "bg-rust hover:bg-rust/90")
         }
       >
+        {busy && <Spinner className="h-4 w-4" />}
         {!isConnected
           ? "Connect wallet"
           : isPending
