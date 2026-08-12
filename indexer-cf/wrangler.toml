@@ -11,7 +11,7 @@ crons = ["* * * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "rwa-perps"
-database_id = "PASTE_DATABASE_ID_HERE"
+database_id = "b26bb92c-eef4-46b8-a291-3553b14679d2"
 
 # --- ACTIVE: Robinhood TESTNET (46630) ---
 [vars]
