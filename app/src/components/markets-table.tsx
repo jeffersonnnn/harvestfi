@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Search } from "lucide-react";
 import { type MarketInfo } from "@/hooks/use-markets";
 import { usePriceHistory } from "@/hooks/use-price-history";
@@ -8,15 +9,7 @@ import { Sparkline } from "@/components/sparkline";
 import { formatUsdPrice, formatETH } from "@/lib/format";
 import { marketMeta, prettyName, GROUPS, type Group } from "@/lib/commodities-meta";
 
-export function MarketsTable({
-  markets,
-  isLoading,
-  onTrade,
-}: {
-  markets: MarketInfo[];
-  isLoading: boolean;
-  onTrade: (m: MarketInfo) => void;
-}) {
+export function MarketsTable({ markets, isLoading }: { markets: MarketInfo[]; isLoading: boolean }) {
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState<Group | "All">("All");
 
@@ -85,7 +78,7 @@ export function MarketsTable({
               </tr>
             )}
             {filtered.map((m) => (
-              <MarketRow key={m.id} m={m} onTrade={onTrade} />
+              <MarketRow key={m.id} m={m} />
             ))}
           </tbody>
         </table>
@@ -94,7 +87,7 @@ export function MarketsTable({
   );
 }
 
-function MarketRow({ m, onTrade }: { m: MarketInfo; onTrade: (m: MarketInfo) => void }) {
+function MarketRow({ m }: { m: MarketInfo }) {
   const meta = marketMeta(m.symbol);
   const { data: history } = usePriceHistory(m.id);
   const values = (history ?? []).map((p) => Number(p.price));
@@ -138,13 +131,18 @@ function MarketRow({ m, onTrade }: { m: MarketInfo; onTrade: (m: MarketInfo) => 
         <span className="text-rust">{formatETH(m.shortOI)}</span>
       </td>
       <td className="text-right">
-        <button
-          disabled={m.stale}
-          onClick={() => onTrade(m)}
-          className="rounded-full bg-bone/10 px-4 py-1.5 text-xs font-semibold text-bone transition-colors hover:bg-wheat hover:text-soil-950 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-bone/10 disabled:hover:text-bone"
-        >
-          Trade
-        </button>
+        {m.stale ? (
+          <span className="cursor-not-allowed rounded-full bg-bone/10 px-4 py-1.5 text-xs font-semibold text-bone/30">
+            Trade
+          </span>
+        ) : (
+          <Link
+            href={`/trade/${m.symbol}`}
+            className="rounded-full bg-bone/10 px-4 py-1.5 text-xs font-semibold text-bone transition-colors hover:bg-wheat hover:text-soil-950"
+          >
+            Trade
+          </Link>
+        )}
       </td>
     </tr>
   );

@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useMarkets, type MarketInfo } from "@/hooks/use-markets";
+import { useMarkets } from "@/hooks/use-markets";
 import { PoolStats } from "@/components/pool-stats";
 import { MarketsTable } from "@/components/markets-table";
-import { TradePanel } from "@/components/trade-panel";
 import { PositionsDashboard } from "@/components/positions-dashboard";
 import { CHAIN_ID, IS_TESTNET } from "@/lib/chain";
 
@@ -18,7 +16,6 @@ const DATELINE = new Date().toLocaleDateString("en-US", {
 
 export default function Home() {
   const { markets, isLoading } = useMarkets();
-  const [selected, setSelected] = useState<MarketInfo | null>(null);
   const liveCount = markets.filter((m) => !m.stale).length;
 
   return (
@@ -99,14 +96,12 @@ export default function Home() {
             it&apos;s fresh.
           </p>
         </div>
-        <MarketsTable markets={markets} isLoading={isLoading} onTrade={setSelected} />
+        <MarketsTable markets={markets} isLoading={isLoading} />
       </section>
 
       <section className="py-6">
         <PositionsDashboard markets={markets} />
       </section>
-
-      {selected && <TradePanel market={selected} onClose={() => setSelected(null)} />}
 
       {/* Trust / footer */}
       <footer className="mt-10 border-t border-bone/10 py-10">
