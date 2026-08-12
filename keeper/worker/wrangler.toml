@@ -18,6 +18,7 @@ RPC_URL = "https://rpc.testnet.chain.robinhood.com"
 ORACLE_ADDRESS = "0xd3Fa9008eC7511f3d32A1760C3Ea52c58111f140"
 REGISTRY_ADDRESS = "0xFc7e57695D3b44393Ed007e45527e1eaB9Df58D6"
 DRY_RUN = "false"  # live: sign + post on-chain. (Was "true" for the first dry-run verification.)
+POST_BATCH_LIMIT = "6"  # post the 6 stalest markets/tick to fit the free-plan CPU limit (all cycle ~every 4 min)
 
 # --- MAINNET (4663) — swap these in at mainnet launch (with the KMS/mainnet signer). ---
 # CHAIN_ID = "4663"

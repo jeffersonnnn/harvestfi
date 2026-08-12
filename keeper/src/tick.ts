@@ -93,16 +93,20 @@ export async function runOnce(): Promise<void> {
         })),
     });
 
-    for (let i = 0; i < updates.length; i++) {
-        const u = updates[i];
-        const r = onchain[i];
-        const onchainTs = r.status === "success" ? (r.result as unknown as readonly [bigint, bigint])[1] : 0n;
+    // Which updates are actually ahead of on-chain? Pair each with its on-chain ts, stalest first.
+    const pending = updates
+        .map((u, i) => {
+            const r = onchain[i];
+            const onchainTs = r.status === "success" ? (r.result as unknown as readonly [bigint, bigint])[1] : 0n;
+            return {u, onchainTs};
+        })
+        .filter((x) => x.u.ts > x.onchainTs)
+        .sort((a, b) => (a.onchainTs < b.onchainTs ? -1 : a.onchainTs > b.onchainTs ? 1 : 0));
 
-        if (u.ts <= onchainTs) {
-            console.log(`[keeper] ${u.symbol}: ts ${u.ts} not ahead of on-chain ${onchainTs} — skipping`);
-            continue;
-        }
+    // Cap signatures per tick to fit a CPU-limited host; 0 = post them all.
+    const toPost = config.postBatchLimit > 0 ? pending.slice(0, config.postBatchLimit) : pending;
 
+    for (const {u} of toPost) {
         const sig = await signPrice(account, config.chainId, config.oracleAddress, u.id, u.priceE8, u.ts);
         ids.push(u.id);
         prices.push(u.priceE8);
