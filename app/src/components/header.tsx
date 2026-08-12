@@ -17,6 +17,8 @@ const NAV = [
 
 export function Header() {
   const pathname = usePathname();
+  // The home page ("/") ships its own full-screen hero navbar — hide the global one there.
+  if (pathname === "/") return null;
   return (
     <header className="sticky top-0 z-40 border-b border-bone/10 bg-soil-950/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5 sm:px-8">

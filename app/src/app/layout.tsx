@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { Fraunces, Hanken_Grotesk, IBM_Plex_Mono, Instrument_Serif, Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/header";
@@ -12,6 +12,20 @@ const mono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-plex-mono",
+  display: "swap",
+});
+// Atelier-style hero type: Instrument Serif (headings) + Inter (nav/body).
+const instrument = Instrument_Serif({
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
+  variable: "--font-instrument-serif",
+  display: "swap",
+});
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-inter-sans",
   display: "swap",
 });
 
@@ -27,7 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`h-full antialiased ${display.variable} ${body.variable} ${mono.variable}`}
+      className={`h-full antialiased ${display.variable} ${body.variable} ${mono.variable} ${instrument.variable} ${inter.variable}`}
     >
       <body className="flex min-h-full flex-col">
         <Providers>
