@@ -81,13 +81,22 @@ export async function runOnce(): Promise<void> {
     const timestamps: bigint[] = [];
     const signatures: Hex[] = [];
 
-    for (const u of updates) {
-        const [, onchainTs] = (await publicClient.readContract({
+    // ONE multicall for all on-chain timestamp reads (not N eth_calls) — required to fit the Cloudflare
+    // Workers 50-subrequest cap. Signing below is local (no subrequests).
+    const onchain = await publicClient.multicall({
+        allowFailure: true,
+        contracts: updates.map((u) => ({
             address: config.oracleAddress,
             abi: pushPriceOracleAbi,
             functionName: "getPrice",
             args: [u.id],
-        })) as readonly [bigint, bigint];
+        })),
+    });
+
+    for (let i = 0; i < updates.length; i++) {
+        const u = updates[i];
+        const r = onchain[i];
+        const onchainTs = r.status === "success" ? (r.result as unknown as readonly [bigint, bigint])[1] : 0n;
 
         if (u.ts <= onchainTs) {
             console.log(`[keeper] ${u.symbol}: ts ${u.ts} not ahead of on-chain ${onchainTs} — skipping`);
