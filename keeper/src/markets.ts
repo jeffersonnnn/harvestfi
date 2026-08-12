@@ -5,6 +5,11 @@ import {COMMODITIES, COMMODITIES_BY_SYMBOL, type CommoditySpec} from "./commodit
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
+// Cache the discovered market set — decoding getCommodity for every market each tick is expensive
+// (heavy under a CPU-limited host). The set changes rarely; re-read at most every CACHE_MS.
+let _cache: {specs: CommoditySpec[]; at: number} | null = null;
+const CACHE_MS = Number(process.env.MARKETS_CACHE_MS ?? "1200000"); // 20 min
+
 interface OnchainCommodity {
     symbol: string;
     unit: string;
@@ -27,6 +32,8 @@ export async function discoverMarkets(registryAddress: Address): Promise<Commodi
     if (!registryAddress || registryAddress.toLowerCase() === ZERO) {
         return COMMODITIES; // offline fallback: full catalog with its static ids
     }
+
+    if (_cache && Date.now() - _cache.at < CACHE_MS) return _cache.specs;
 
     const count = Number(
         (await publicClient.readContract({
@@ -64,5 +71,6 @@ export async function discoverMarkets(registryAddress: Address): Promise<Commodi
         }
         specs.push({id: BigInt(i), symbol: c.symbol, teSlug: cat.teSlug, currency: cat.currency, unit: c.unit || cat.unit});
     });
+    _cache = {specs, at: Date.now()};
     return specs;
 }

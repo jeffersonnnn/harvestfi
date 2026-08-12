@@ -18,6 +18,9 @@ interface Update {
     ts: bigint;
 }
 
+// Round-robin cursor for batched (CPU-limited) posting.
+let _rr = 0;
+
 /// Build the normalized, timestamped price updates for this tick.
 async function buildUpdates(nowSec: bigint): Promise<Update[]> {
     const source = selectSource();
@@ -74,39 +77,39 @@ export async function runOnce(): Promise<void> {
         return;
     }
 
-    // Live: drop any commodity whose on-chain timestamp is already >= now (contract requires
-    // strictly increasing, non-future timestamps).
     const ids: bigint[] = [];
     const prices: bigint[] = [];
     const timestamps: bigint[] = [];
     const signatures: Hex[] = [];
 
-    // ONE multicall for all on-chain timestamp reads (not N eth_calls) — required to fit the Cloudflare
-    // Workers 50-subrequest cap. Signing below is local (no subrequests).
-    const onchain = await publicClient.multicall({
-        allowFailure: true,
-        contracts: updates.map((u) => ({
-            address: config.oracleAddress,
-            abi: pushPriceOracleAbi,
-            functionName: "getPrice",
-            args: [u.id],
-        })),
-    });
-
-    // Which updates are actually ahead of on-chain? Pair each with its on-chain ts, stalest first.
-    const pending = updates
-        .map((u, i) => {
+    let toPost: Update[];
+    if (config.postBatchLimit > 0) {
+        // CPU-limited host (e.g. Cloudflare Workers free): post the next N markets round-robin, with
+        // NO on-chain reads — nowSec is always ahead of each market's last post (it cycles every few
+        // ticks), so the strictly-increasing-ts rule holds without checking. Minimal CPU per tick.
+        const n = Math.min(config.postBatchLimit, updates.length);
+        toPost = [];
+        for (let k = 0; k < n; k++) toPost.push(updates[(_rr + k) % updates.length]);
+        _rr = (_rr + n) % updates.length;
+    } else {
+        // Unmetered host: read every on-chain ts in one multicall, post everything strictly ahead.
+        const onchain = await publicClient.multicall({
+            allowFailure: true,
+            contracts: updates.map((u) => ({
+                address: config.oracleAddress,
+                abi: pushPriceOracleAbi,
+                functionName: "getPrice",
+                args: [u.id],
+            })),
+        });
+        toPost = updates.filter((u, i) => {
             const r = onchain[i];
             const onchainTs = r.status === "success" ? (r.result as unknown as readonly [bigint, bigint])[1] : 0n;
-            return {u, onchainTs};
-        })
-        .filter((x) => x.u.ts > x.onchainTs)
-        .sort((a, b) => (a.onchainTs < b.onchainTs ? -1 : a.onchainTs > b.onchainTs ? 1 : 0));
+            return u.ts > onchainTs;
+        });
+    }
 
-    // Cap signatures per tick to fit a CPU-limited host; 0 = post them all.
-    const toPost = config.postBatchLimit > 0 ? pending.slice(0, config.postBatchLimit) : pending;
-
-    for (const {u} of toPost) {
+    for (const u of toPost) {
         const sig = await signPrice(account, config.chainId, config.oracleAddress, u.id, u.priceE8, u.ts);
         ids.push(u.id);
         prices.push(u.priceE8);
