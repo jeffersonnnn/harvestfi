@@ -13,6 +13,7 @@ export interface Env {
     REGISTRY_ADDRESS: string;
     PRIVATE_KEY: string; // secret
     POST_INTERVAL_MS?: string;
+    POST_BATCH_LIMIT?: string;
     DRY_RUN?: string;
 }
 
@@ -29,6 +30,7 @@ export default {
             "REGISTRY_ADDRESS",
             "PRIVATE_KEY",
             "POST_INTERVAL_MS",
+            "POST_BATCH_LIMIT",
             "DRY_RUN",
         ];
         for (const k of keys) if (env[k] != null) process.env[k] = String(env[k]);
