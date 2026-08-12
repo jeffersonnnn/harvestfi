@@ -1,0 +1,27 @@
+[Unit]
+# RWA Perps price keeper — always-on systemd service for a Linux VPS.
+# Install: see keeper/deploy/README.md. Secrets live in /etc/rwa-keeper.env (chmod 600), NOT here.
+Description=RWA Perps price keeper (normalize -> sign -> post)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rwakeeper
+WorkingDirectory=/opt/rwa-perps/keeper
+EnvironmentFile=/etc/rwa-keeper.env
+ExecStart=/usr/bin/npm start
+# Resilience: always restart, back off on crash loops.
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=10
+# Hardening.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/rwa-perps/keeper
+
+[Install]
+WantedBy=multi-user.target

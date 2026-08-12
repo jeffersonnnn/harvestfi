@@ -2,11 +2,11 @@ import {type Address, type Hex} from "viem";
 import {config} from "./config.js";
 import {account, publicClient, walletClient} from "./client.js";
 import {pushPriceOracleAbi} from "./abis.js";
-import {COMMODITIES} from "./commodities.js";
 import {normalizeToE8} from "./normalize.js";
 import {fetchFxRates} from "./fx.js";
 import {selectSource} from "./sources.js";
 import {signPrice} from "./sign.js";
+import {discoverMarkets} from "./markets.js";
 
 interface Update {
     id: bigint;
@@ -18,13 +18,16 @@ interface Update {
 /// Build the normalized, timestamped price updates for this tick.
 async function buildUpdates(nowSec: bigint): Promise<Update[]> {
     const source = selectSource();
-    const raw = await source.fetchPrices(COMMODITIES);
+    // Discover the active market set from the registry each tick, so markets added on-chain are
+    // picked up automatically (no restart, no code change). Falls back to the static catalog offline.
+    const markets = await discoverMarkets(config.registryAddress);
+    const raw = await source.fetchPrices(markets);
 
-    const currencies = COMMODITIES.map((c) => c.currency);
+    const currencies = markets.map((c) => c.currency);
     const fx = await fetchFxRates(currencies);
 
     const updates: Update[] = [];
-    for (const c of COMMODITIES) {
+    for (const c of markets) {
         const r = raw.get(c.symbol);
         if (r === undefined) {
             console.warn(`[keeper] no quote for ${c.symbol} (id ${c.id}) — skipping`);

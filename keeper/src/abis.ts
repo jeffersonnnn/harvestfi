@@ -64,4 +64,27 @@ export const commodityRegistryAbi = [
         inputs: [{name: "id", type: "uint256"}],
         outputs: [{type: "bool"}],
     },
+    {
+        type: "function",
+        name: "getCommodity",
+        stateMutability: "view",
+        inputs: [{name: "id", type: "uint256"}],
+        outputs: [
+            {
+                type: "tuple",
+                components: [
+                    {name: "symbol", type: "string"},
+                    {name: "unit", type: "string"},
+                    {name: "quoteCurrency", type: "string"},
+                    {name: "category", type: "string"},
+                    {name: "listed", type: "bool"},
+                    {name: "maxLeverageX", type: "uint16"},
+                    {name: "maintenanceMarginBps", type: "uint16"},
+                    {name: "openFeeBps", type: "uint16"},
+                    {name: "closeFeeBps", type: "uint16"},
+                    {name: "maxOpenInterestEth", type: "uint256"},
+                ],
+            },
+        ],
+    },
 ] as const;

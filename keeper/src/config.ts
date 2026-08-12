@@ -10,6 +10,9 @@ export const config = {
     rpcUrl: env("RPC_URL", "https://rpc.mainnet.chain.robinhood.com"),
     chainId: Number(env("CHAIN_ID", "4663")),
     oracleAddress: env("ORACLE_ADDRESS", "0x0000000000000000000000000000000000000000") as Address,
+    // When set, the keeper DISCOVERS the market set (ids + symbols) from the on-chain registry, so
+    // listing a new market needs no keeper code change. Unset (zero) => fall back to the static catalog.
+    registryAddress: env("REGISTRY_ADDRESS", "0x0000000000000000000000000000000000000000") as Address,
     // Default is the well-known Anvil dev key #0 — a PLACEHOLDER so dry-run works out of the box.
     // MUST be overridden with the real trusted-signer key for any live posting.
     privateKey: env("PRIVATE_KEY", "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80") as Hex,
