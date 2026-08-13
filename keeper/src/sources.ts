@@ -61,6 +61,17 @@ const SIM: Record<string, SimSpec> = {
     POTATOES: {price: 18, vol: 0.15}, RAPESEED: {price: 950, vol: 0.06}, CANOLA: {price: 650, vol: 0.06},
     BARLEY: {price: 18000, vol: 0.05}, SUNFLOWER_OIL: {price: 1200, vol: 0.06}, TEA: {price: 200, vol: 0.05},
     PALM_OIL: {price: 4000, vol: 0.07}, WOOL: {price: 1800, vol: 0.06},
+    // Industrial (USD/unit)
+    STEEL: {price: 540, vol: 0.08}, STEEL_REBAR: {price: 500, vol: 0.08}, HRC_STEEL: {price: 760, vol: 0.08},
+    IRON_ORE: {price: 105, vol: 0.1}, COPPER: {price: 9200, vol: 0.07}, ALUMINUM: {price: 2400, vol: 0.06},
+    ZINC: {price: 2700, vol: 0.08}, NICKEL: {price: 16500, vol: 0.1}, LEAD: {price: 2050, vol: 0.07},
+    TIN: {price: 31000, vol: 0.1}, COBALT: {price: 27000, vol: 0.12}, LITHIUM: {price: 13500, vol: 0.15},
+    MOLYBDENUM: {price: 48000, vol: 0.12}, MANGANESE: {price: 1900, vol: 0.1}, TITANIUM: {price: 8000, vol: 0.1},
+    MAGNESIUM: {price: 2500, vol: 0.1}, SILICON: {price: 1600, vol: 0.1}, ANTIMONY: {price: 13000, vol: 0.14},
+    TUNGSTEN: {price: 37000, vol: 0.1}, VANADIUM: {price: 25000, vol: 0.12}, GRAPHITE: {price: 900, vol: 0.1},
+    URANIUM: {price: 85, vol: 0.1}, COAL: {price: 130, vol: 0.12}, COKING_COAL: {price: 240, vol: 0.14},
+    NEODYMIUM: {price: 70, vol: 0.15}, GERMANIUM: {price: 2000, vol: 0.15}, GALLIUM: {price: 600, vol: 0.15},
+    PALLADIUM: {price: 1000, vol: 0.1},
 };
 
 function simSeed(sym: string): number {
