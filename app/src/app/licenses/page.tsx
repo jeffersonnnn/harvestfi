@@ -24,7 +24,7 @@ export default function LicensesPage() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <InfoCard
           title="One per market"
-          body="Exactly one license exists per commodity - 23 in all. Minting is first-come; there is no second."
+          body="Exactly one license exists per commodity, 23 in all. Minting is first-come; there is no second."
         />
         <InfoCard
           title="70% of the fees"

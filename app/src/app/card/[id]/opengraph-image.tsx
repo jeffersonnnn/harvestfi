@@ -9,7 +9,7 @@ import { BRAND } from "@/lib/brand";
 export const runtime = "nodejs";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = `${BRAND.short} - PnL card`;
+export const alt = `${BRAND.short} · PnL card`;
 
 const usd = (e8: bigint) => {
   const n = Number(e8) / 1e8;

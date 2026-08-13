@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "How it works - HarvestFi",
+  title: "How it works · HarvestFi",
   description:
     "The machinery behind HarvestFi: signed push oracle, LP-pool counterparty, funding and borrow fees, the 70/30 license split, and the safety systems.",
 };
@@ -23,7 +23,7 @@ export default function HowItWorks() {
         <p>Six non-upgradeable contracts on Robinhood Chain, each with one job:</p>
         <Defs
           items={[
-            ["CommodityRegistry", "The market catalog - symbol, unit, leverage cap, fees, and open-interest cap per commodity."],
+            ["CommodityRegistry", "The market catalog: symbol, unit, leverage cap, fees, and open-interest cap per commodity."],
             ["PushPriceOracle", "Holds the latest signed USD price per market, with a max-age staleness rule and a price-deviation circuit breaker."],
             ["LiquidityPool", "The ETH pool that is the counterparty to every trade. LP shares appreciate as the pool grows; dead-shares block the first-deposit inflation edge."],
             ["PerpEngine", "Opens, closes, and liquidates positions; computes PnL, funding, and the borrow fee; settles everything against the pool."],
@@ -41,7 +41,7 @@ export default function HowItWorks() {
         </p>
         <Flow steps={["Market feed", "Normalize to 1e8 USD", "Sign", "Post on-chain", "Engine reads price"]} />
         <p>
-          If a market&apos;s price goes stale - the feed pauses on a weekend or overnight - the oracle
+          If a market&apos;s price goes stale (the feed pauses on a weekend or overnight), the oracle
           marks it stale and the app auto-disables trading on it until a fresh price arrives. A new
           price that jumps too far from the last one is rejected by the circuit breaker.
         </p>
@@ -53,7 +53,7 @@ export default function HowItWorks() {
           There is no order book and no matched taker. When you open a position, the{" "}
           <span className="text-bone">liquidity pool</span> takes the other side. Your profit is paid
           from the pool; your loss is paid into it. LPs therefore profit when traders lose in
-          aggregate - and they also earn the <span className="text-bone">borrow fee</span>.
+          aggregate, and they also earn the <span className="text-bone">borrow fee</span>.
         </p>
         <p>
           <span className="text-bone">Funding</span> keeps the market balanced: when one side is
@@ -71,7 +71,7 @@ export default function HowItWorks() {
       {/* Fees */}
       <Section eyebrow="04" title="Fees and the 70/30 split">
         <p>
-          Each trade pays a small fee on open and on close - 5 bps each, about 0.10% round-trip on
+          Each trade pays a small fee on open and on close: 5 bps each, about 0.10% round-trip on
           notional. Every fee is split the same way:
         </p>
         <div className="my-4 grid grid-cols-2 gap-3">
@@ -82,7 +82,7 @@ export default function HowItWorks() {
           Fees accrue into a per-market bucket that the current license holder can claim at any time.
           When a license is sold, the seller&apos;s earned fees settle to them and the buyer earns
           cleanly from the sale forward. Fees also accrue <span className="text-bone">before</span> a
-          market is minted - so the first person to mint that license can claim the whole backlog.
+          market is minted, so the first person to mint that license can claim the whole backlog.
         </p>
         <Link href="/licenses" className="text-sm text-wheat/90 underline-offset-4 hover:underline">
           Browse market licenses →
@@ -97,7 +97,7 @@ export default function HowItWorks() {
             ["Flat liquidation fee", "A liquidator is paid a fixed reward from collateral, keeping under-margined positions closed promptly."],
             ["Guardian pause", "A guardian can pause trading in an emergency without being able to touch user funds."],
             ["Circuit breaker", "The oracle rejects a price that deviates too far from the previous one, blocking a single bad print."],
-            ["Non-upgradeable", "The contracts cannot be changed after deploy - no admin key can rewrite the logic under you."],
+            ["Non-upgradeable", "The contracts cannot be changed after deploy; no admin key can rewrite the logic under you."],
           ]}
         />
       </Section>

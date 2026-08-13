@@ -18,7 +18,7 @@ export function Providers({ children }: { children: ReactNode }) {
   if (!PRIVY_APP_ID) {
     if (typeof window !== "undefined") {
       console.warn(
-        "[HarvestFi] NEXT_PUBLIC_PRIVY_APP_ID is not set - wallet login is disabled. " +
+        "[HarvestFi] NEXT_PUBLIC_PRIVY_APP_ID is not set. Wallet login is disabled. " +
           "Create an app at dashboard.privy.io and set the env var.",
       );
     }

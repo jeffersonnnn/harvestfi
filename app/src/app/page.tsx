@@ -14,7 +14,7 @@ export default function Home() {
           <PitchCard
             eyebrow="For traders"
             title="Leverage on real crops"
-            body="Native ETH collateral, oracle-priced, up to 10× - with live PnL you can share the second you close."
+            body="Native ETH collateral, oracle-priced, up to 10×, with live PnL you can share the second you close."
           />
           <PitchCard
             eyebrow="For owners"
@@ -35,7 +35,7 @@ export default function Home() {
             </h2>
             <div className="space-y-4 text-[1.02rem] leading-relaxed text-bone/70">
               <p>
-                Commodities move the real economy - the grain in your bread, the metal in your phone,
+                Commodities move the real economy: the grain in your bread, the metal in your phone,
                 the fuel in your tank. Yet the markets that price them sit behind brokers, minimums, and
                 closing bells. We think they should be open, always-on, and ownable by the people who
                 use them.
@@ -43,14 +43,14 @@ export default function Home() {
               <p>
                 HarvestFi is that market, rebuilt on-chain. A signed oracle brings real prices to the
                 chain every minute. A shared <span className="text-bone">liquidity pool</span> is the
-                counterparty to every trade, so anyone can go long or short with leverage in native ETH -
+                counterparty to every trade, so anyone can go long or short with leverage in native ETH,
                 no order book, no counterparty hunt.
               </p>
               <p>
                 The twist is ownership. Every market has a single{" "}
                 <span className="text-bone">license NFT</span>, and its holder earns 70% of that
                 market&apos;s trading fees. The protocol keeps 30%. It turns a market into an asset you
-                can own, operate, and sell - not just trade.
+                can own, operate, and sell, not just trade.
               </p>
               <Link href="/how-it-works" className="inline-block pt-1 text-sm text-wheat/90 underline-offset-4 hover:underline">
                 Read the full mechanism →
@@ -63,9 +63,9 @@ export default function Home() {
         <section className="border-t border-bone/10 py-16">
           <p className="label mb-8 text-wheat">How it works</p>
           <div className="grid gap-8 sm:grid-cols-3">
-            <Step n="01" title="Fund your wallet" body="Log in with email or a wallet, then bring ETH onto Robinhood Chain - the app settles in native ETH." />
+            <Step n="01" title="Fund your wallet" body="Log in with email or a wallet, then bring ETH onto Robinhood Chain. The app settles in native ETH." />
             <Step n="02" title="Open a position" body="Pick a commodity, go long or short with leverage. The LP pool takes the other side; your PnL moves on the live chart." />
-            <Step n="03" title="Close & share" body="Close for your payout from the pool, then share a PnL card - or hold a market's license and earn its fees." />
+            <Step n="03" title="Close & share" body="Close for your payout from the pool, then share a PnL card, or hold a market's license and earn its fees." />
           </div>
         </section>
 
@@ -101,14 +101,14 @@ export default function Home() {
             One engine. Every real-world market.
           </h2>
           <p className="mb-10 max-w-2xl text-[1.02rem] leading-relaxed text-bone/65">
-            The same machine - signed oracle, LP-pool counterparty, ownable license - generalizes far
+            The same machine (signed oracle, LP-pool counterparty, ownable license) generalizes far
             past the farm. We start where clean price data already exists and widen from there. Each new
             market ships with its own license, so the community can own the surface it expands onto.
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Phase tag="Live" live title="Farm commodities" body="23 agricultural markets - grains, oilseeds, softs, dairy, materials - priced on-chain every minute." />
+            <Phase tag="Live" live title="Farm commodities" body="23 agricultural markets (grains, oilseeds, softs, dairy, materials), priced on-chain every minute." />
             <Phase tag="Next" title="Metals & energy" body="Gold, silver, copper, platinum, crude. Clean spot feeds already exist; list them through the same registry." />
-            <Phase tag="Then" title="Livestock & industrials" body="Cattle, hogs, lumber, rubber - broadening the real-world catalog as feeds and liquidity mature." />
+            <Phase tag="Then" title="Livestock & industrials" body="Cattle, hogs, lumber, rubber, broadening the real-world catalog as feeds and liquidity mature." />
             <Phase tag="Beyond" title="Any real-world asset" body="FX, rates, carbon, and more. If it has a trustworthy price, it can become an ownable HarvestFi market." />
           </div>
 
