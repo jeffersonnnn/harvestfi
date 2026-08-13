@@ -38,24 +38,72 @@ export const staticSource: PriceSource = {
     },
 };
 
-/// Simulated LIVE feed: random-walks the static quotes so prices move on their own each tick, the
-/// way a real market data feed would. Use for a live-feeling testnet demo without a data subscription.
-/// NOT for production - production uses `tradingeconomics` (real prices). Values mean-revert slightly
-/// toward the anchor so they wander realistically instead of drifting away.
-const simState: Record<string, number> = { ...STATIC_QUOTES };
+/// SIMULATED price feed - a synthetic, continuous market model for all 23 markets. This is NOT real
+/// market data; the UI must disclose "simulated prices" to users (NEXT_PUBLIC_SIMULATED_PRICES).
+///
+/// Model: each price is a pure, deterministic function of the wall clock - a fractal value-noise
+/// curve (sum of octaves at day/hour/15m/3m scales) that mean-reverts around a realistic per-commodity
+/// anchor and is scaled by a realistic per-commodity volatility band. Because it depends only on the
+/// clock (no stored state), it is CONTINUOUS across stateless Worker restarts and reproducible: two
+/// ticks a minute apart read nearly-equal prices, so opens and closes settle on the same series (no
+/// phantom PnL). Anchors are in each commodity's NATIVE quote currency (matching commodities.ts), so
+/// the existing cents/dollars + FX normalize step applies unchanged.
+interface SimSpec {
+    price: number; // anchor in NATIVE currency (USd cents / USD / EUR / CAD / INR / MYR / AUD)
+    vol: number; // fractional band half-width (e.g. 0.06 => wanders within ~±6% of the anchor)
+}
+const SIM: Record<string, SimSpec> = {
+    CORN: {price: 441.71, vol: 0.05}, WHEAT: {price: 637.57, vol: 0.06}, RICE: {price: 13.93, vol: 0.05},
+    SOYBEANS: {price: 1152.54, vol: 0.05}, COFFEE: {price: 323.05, vol: 0.1}, SUGAR: {price: 15.06, vol: 0.08},
+    COTTON: {price: 82.37, vol: 0.06}, OAT: {price: 385, vol: 0.06}, ORANGE_JUICE: {price: 310, vol: 0.1},
+    CHEESE: {price: 1.85, vol: 0.05}, COCOA: {price: 8200, vol: 0.12}, LUMBER: {price: 600, vol: 0.08},
+    MILK: {price: 19.5, vol: 0.06}, RUBBER: {price: 170, vol: 0.07}, BUTTER: {price: 7000, vol: 0.05},
+    POTATOES: {price: 18, vol: 0.15}, RAPESEED: {price: 950, vol: 0.06}, CANOLA: {price: 650, vol: 0.06},
+    BARLEY: {price: 18000, vol: 0.05}, SUNFLOWER_OIL: {price: 1200, vol: 0.06}, TEA: {price: 200, vol: 0.05},
+    PALM_OIL: {price: 4000, vol: 0.07}, WOOL: {price: 1800, vol: 0.06},
+};
+
+function simSeed(sym: string): number {
+    let h = 2166136261;
+    for (let i = 0; i < sym.length; i++) {
+        h ^= sym.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0) % 100000;
+}
+const hash01 = (x: number) => {
+    const v = Math.sin(x * 127.1 + 311.7) * 43758.5453;
+    return v - Math.floor(v); // [0,1)
+};
+// Smooth (C1) value noise in [-1,1]: interpolate integer samples with a smoothstep - continuous in t.
+function vnoise(seed: number, t: number, period: number): number {
+    const x = t / period + seed;
+    const i = Math.floor(x);
+    const f = x - i;
+    const u = f * f * (3 - 2 * f);
+    const a = hash01(i);
+    const b = hash01(i + 1);
+    return (a + (b - a) * u) * 2 - 1;
+}
+// Fractal sum of octaves (weights sum to 1): a slow multi-day trend plus intraday/short-term chop.
+function fbm(seed: number, t: number): number {
+    return (
+        0.45 * vnoise(seed, t, 172800) + // ~2-day trend
+        0.3 * vnoise(seed + 11, t, 7200) + // ~2h swing
+        0.15 * vnoise(seed + 23, t, 900) + // ~15m
+        0.1 * vnoise(seed + 41, t, 180) // ~3m chop
+    );
+}
 export const simulatedSource: PriceSource = {
     name: "simulated",
     async fetchPrices(specs) {
+        const t = Date.now() / 1000;
         const out = new Map<string, number>();
         for (const s of specs) {
-            const anchor = STATIC_QUOTES[s.symbol];
-            if (anchor === undefined) continue;
-            const base = simState[s.symbol] ?? anchor;
-            const step = (Math.random() - 0.5) * 0.012; // ~±0.6% per tick
-            const revert = ((anchor - base) / anchor) * 0.05; // gentle mean reversion
-            const next = base * (1 + step + revert);
-            simState[s.symbol] = next;
-            out.set(s.symbol, next);
+            const cfg = SIM[s.symbol];
+            if (cfg === undefined) continue;
+            const move = fbm(simSeed(s.symbol), t) * cfg.vol;
+            out.set(s.symbol, cfg.price * (1 + move));
         }
         return out;
     },

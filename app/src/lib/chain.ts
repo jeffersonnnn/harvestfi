@@ -13,6 +13,10 @@ export const FAUCET_URL =
 
 export const IS_TESTNET = CHAIN_ID !== 4663;
 
+// When true, prices are SIMULATED (synthetic model, not real market data). The UI must disclose this
+// to users. Set NEXT_PUBLIC_SIMULATED_PRICES=true whenever the keeper runs PRICE_SOURCE=simulated.
+export const SIMULATED_PRICES = process.env.NEXT_PUBLIC_SIMULATED_PRICES === "true";
+
 export const robinhoodChain = defineChain({
   id: CHAIN_ID,
   name: IS_TESTNET ? "Robinhood Chain Testnet" : "Robinhood Chain",
