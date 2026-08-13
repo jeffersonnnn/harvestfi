@@ -16,14 +16,9 @@ export interface PositionView {
   liquidatable: boolean | null;
 }
 
-interface PositionStruct {
-  trader: string;
-  commodityId: bigint;
-  isLong: boolean;
-  collateral: bigint;
-  sizeEth: bigint;
-  entryPrice: bigint;
-}
+// viem decodes the positions(uint256) getter as a positional TUPLE, not a named object:
+// [trader, commodityId, isLong, collateral, sizeEth, entryPrice, entryFundingIndex, entryBorrowingIndex, openedAt]
+type PositionTuple = readonly [string, bigint, boolean, bigint, bigint, bigint, bigint, bigint, bigint];
 
 export function usePositions() {
   const { address } = useAccount();
@@ -56,16 +51,18 @@ export function usePositions() {
 
       const mine = structs.flatMap((r, id) => {
         if (r.status !== "success") return [];
-        const p = r.result as unknown as PositionStruct;
-        if (p.trader?.toLowerCase() !== address.toLowerCase() || p.collateral === 0n) return [];
+        const p = r.result as unknown as PositionTuple;
+        const trader = p[0];
+        const collateral = p[3];
+        if (trader?.toLowerCase() !== address.toLowerCase() || collateral === 0n) return [];
         return [
           {
             id: BigInt(id),
-            commodityId: Number(p.commodityId),
-            isLong: p.isLong,
-            collateral: p.collateral,
-            sizeEth: p.sizeEth,
-            entryPrice: p.entryPrice,
+            commodityId: Number(p[1]),
+            isLong: p[2],
+            collateral,
+            sizeEth: p[4],
+            entryPrice: p[5],
           },
         ];
       });
