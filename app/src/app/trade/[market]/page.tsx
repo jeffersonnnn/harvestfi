@@ -16,7 +16,7 @@ export default function TradePage() {
   const symbol = String(params.market ?? "").toUpperCase();
   const { markets, isLoading } = useMarkets();
   const market = markets.find((m) => m.symbol === symbol);
-  const { data: history } = usePriceHistory(market?.id ?? -1, 200);
+  const { data: history } = usePriceHistory(market?.id ?? -1, market?.symbol, 200);
 
   if (!market) {
     return (
