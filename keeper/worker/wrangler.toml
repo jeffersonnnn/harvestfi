@@ -12,7 +12,10 @@ crons = ["* * * * *"]
 
 # --- ACTIVE: Robinhood MAINNET (4663). Testnet values kept in the comment below for rollback. ---
 [vars]
-PRICE_SOURCE = "tradingeconomics"
+# TEST MODE: TE key returns 403 and Yahoo 429s from edge IPs, so use simulated (a moving
+# random-walk price for all 23 markets) to exercise mainnet end-to-end. Switch back to
+# "tradingeconomics" (fix the TE key) or "yahoo" (run from a residential IP) before real users.
+PRICE_SOURCE = "simulated"
 CHAIN_ID = "4663"
 RPC_URL = "https://rpc.mainnet.chain.robinhood.com"
 ORACLE_ADDRESS = "0x43F4B3E880437De908f418B199daE8F326F0F41A"
