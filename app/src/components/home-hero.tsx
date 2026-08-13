@@ -45,8 +45,9 @@ function CopyIcon({ className = "" }: { className?: string }) {
   );
 }
 
-/// Contract-address chip. Copies the value on click (placeholder "Coming Soon" until the CA exists).
-const CONTRACT_ADDRESS = "Coming Soon";
+/// Contract-address chip. Copies the full address on click; shows a truncated form.
+const CONTRACT_ADDRESS = "0x27038dd6c78d03c0b409257911638d7055bdd2b6";
+const CA_SHORT = `${CONTRACT_ADDRESS.slice(0, 6)}…${CONTRACT_ADDRESS.slice(-4)}`;
 function CopyCA() {
   const [copied, setCopied] = useState(false);
   async function copy() {
@@ -65,7 +66,7 @@ function CopyCA() {
       className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 backdrop-blur-sm transition-colors hover:border-white/40 hover:bg-white/10"
     >
       <span className="label text-white/50">CA</span>
-      <span className="font-mono text-xs text-white/90">{copied ? "Copied ✓" : CONTRACT_ADDRESS}</span>
+      <span className="font-mono text-xs text-white/90">{copied ? "Copied ✓" : CA_SHORT}</span>
       <CopyIcon className="h-3.5 w-3.5 text-white/50" />
     </button>
   );
