@@ -42,7 +42,7 @@ test("yahoo source maps regularMarketPrice by symbol", async () => {
     assert.equal(out.get("GOLD"), 4084.15);
 });
 
-test("yahoo grain prices normalize through the US-cents (USd) path — the corn trap holds", async () => {
+test("yahoo grain prices normalize through the US-cents (USd) path - the corn trap holds", async () => {
     globalThis.fetch = yahooMock(priceChart({"ZC=F": 430.25}));
     const out = await yahooSource.fetchPrices([spec("CORN")]);
     // Corn quotes in US cents on Yahoo, exactly like TE. 430.25 cents = $4.3025/bu.

@@ -10,7 +10,7 @@ contracts/cache/
 contracts/broadcast/
 keeper/dist/
 
-# Env / secrets — templates (*.example) are intentionally kept
+# Env / secrets - templates (*.example) are intentionally kept
 .env
 .env.local
 .env.*.local

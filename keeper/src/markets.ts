@@ -5,7 +5,7 @@ import {COMMODITIES, COMMODITIES_BY_SYMBOL, type CommoditySpec} from "./commodit
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
-// Cache the discovered market set — decoding getCommodity for every market each tick is expensive
+// Cache the discovered market set - decoding getCommodity for every market each tick is expensive
 // (heavy under a CPU-limited host). The set changes rarely; re-read at most every CACHE_MS.
 let _cache: {specs: CommoditySpec[]; at: number} | null = null;
 const CACHE_MS = Number(process.env.MARKETS_CACHE_MS ?? "1200000"); // 20 min
@@ -23,7 +23,7 @@ interface OnchainCommodity {
 /// currency, i.e. the cents/dollars distinction the registry does not store reliably) to build the
 /// specs to price.
 ///
-/// The point: listing a new market on-chain (owner `registry.list`) needs NO keeper code change —
+/// The point: listing a new market on-chain (owner `registry.list`) needs NO keeper code change -
 /// only a matching catalog entry in commodities.ts. This is what makes the "launch 7 fighters, then
 /// add markets incrementally" plan a config change, not a redeploy.
 ///
@@ -44,7 +44,7 @@ export async function discoverMarkets(registryAddress: Address): Promise<Commodi
     );
     if (count === 0) return [];
 
-    // ONE multicall for all getCommodity reads (not N eth_calls) — required to fit the Cloudflare
+    // ONE multicall for all getCommodity reads (not N eth_calls) - required to fit the Cloudflare
     // Workers 50-subrequest cap.
     const results = await publicClient.multicall({
         allowFailure: true,
@@ -65,7 +65,7 @@ export async function discoverMarkets(registryAddress: Address): Promise<Commodi
         const cat = COMMODITIES_BY_SYMBOL[c.symbol];
         if (!cat) {
             console.warn(
-                `[keeper] registry market ${c.symbol} (id ${i}) has no catalog entry in commodities.ts — cannot price, skipping`,
+                `[keeper] registry market ${c.symbol} (id ${i}) has no catalog entry in commodities.ts - cannot price, skipping`,
             );
             return;
         }

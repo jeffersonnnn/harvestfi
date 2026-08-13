@@ -58,7 +58,7 @@ export function MarketSwitcher({ current, markets }: { current: MarketInfo; mark
                   >
                     <span className="grid h-7 w-7 place-items-center rounded-md bg-soil-800 text-sm">{mm.glyph}</span>
                     <span className="flex-1 text-sm">{prettyName(m.symbol)}</span>
-                    <span className="tnum text-xs text-bone/50">{m.stale ? "—" : formatUsdPrice(m.priceE8)}</span>
+                    <span className="tnum text-xs text-bone/50">{m.stale ? "-" : formatUsdPrice(m.priceE8)}</span>
                   </button>
                 );
               })}

@@ -1,6 +1,6 @@
 # Running the keeper as an always-on service
 
-The keeper must run 24/7 on a dedicated host (NOT a laptop) so on-chain prices stay fresh — if it
+The keeper must run 24/7 on a dedicated host (NOT a laptop) so on-chain prices stay fresh - if it
 stops, prices go stale and trading auto-disables. A ~$5/mo Linux VPS (Hetzner / DigitalOcean / Fly)
 is enough. Below is the systemd path; pm2 or Docker work too.
 
@@ -21,7 +21,7 @@ CHAIN_ID=4663
 RPC_URL=https://rpc.mainnet.chain.robinhood.com
 ORACLE_ADDRESS=<mainnet oracle>
 REGISTRY_ADDRESS=<mainnet registry>   # enables market auto-discovery
-PRIVATE_KEY=<oracle signer key>       # replace with a KMS signer before mainnet — see GO-LIVE.md
+PRIVATE_KEY=<oracle signer key>       # replace with a KMS signer before mainnet - see GO-LIVE.md
 POST_INTERVAL_MS=60000
 DRY_RUN=false
 ```
@@ -46,5 +46,5 @@ env $(cat /etc/rwa-keeper.env | xargs) HEALTHCHECK_ID=6 npx tsx src/healthcheck.
 
 ## Notes
 - **One keeper per signer.** Two keepers sharing a signer key collide on the account nonce and one
-  will crash — run exactly one.
+  will crash - run exactly one.
 - Prefer a **KMS/HSM signer** over the plaintext `PRIVATE_KEY` for mainnet (GO-LIVE.md, accepted risks).

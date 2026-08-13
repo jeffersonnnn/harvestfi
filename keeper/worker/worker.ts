@@ -1,4 +1,4 @@
-/// Cloudflare Worker keeper — a Cron Trigger fires this every minute and it posts one price tick.
+/// Cloudflare Worker keeper - a Cron Trigger fires this every minute and it posts one price tick.
 /// Runs always-on in Cloudflare's edge (no VPS, no laptop), free tier. The signing key lives as an
 /// encrypted Worker Secret, not plaintext on a host.
 ///

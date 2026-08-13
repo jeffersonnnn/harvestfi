@@ -10,7 +10,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   return {
-    title: `${BRAND.short} — PnL card #${id}`,
+    title: `${BRAND.short} - PnL card #${id}`,
     description: `A trade on ${BRAND.name}. ${BRAND.tagline}`,
   };
 }
@@ -49,7 +49,7 @@ export default async function CardPage({ params }: { params: Promise<{ id: strin
       )}
       <p className="mt-6 max-w-sm text-bone/55">
         {pos
-          ? "Trade perpetual futures on real farm commodities — or own a market's license and earn 70% of its fees."
+          ? "Trade perpetual futures on real farm commodities - or own a market's license and earn 70% of its fees."
           : "This position hasn't been indexed yet, or the id is unknown."}
       </p>
       <Link

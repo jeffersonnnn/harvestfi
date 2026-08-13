@@ -5,7 +5,7 @@ import {Base} from "./helpers/Base.sol";
 import {PerpEngine} from "../src/PerpEngine.sol";
 import {LiquidityPool} from "../src/LiquidityPool.sol";
 
-/// A trader contract that rejects ETH — used to prove it cannot block its own liquidation.
+/// A trader contract that rejects ETH - used to prove it cannot block its own liquidation.
 contract RevertingTrader {
     function open(PerpEngine e, uint256 id, bool isLong, uint16 lev) external payable returns (uint256) {
         return e.openPosition{value: msg.value}(id, isLong, lev, 0);
@@ -43,7 +43,7 @@ contract SecurityTest is Base {
         assertGt(keeper.balance - keeperBefore, 0); // liquidator paid
         assertGt(engine.owed(address(rt)), 0); // trader residual escrowed for pull, not lost/blocking
 
-        // The trader can later pull it (from a non-reverting path) — here just confirm the balance exists.
+        // The trader can later pull it (from a non-reverting path) - here just confirm the balance exists.
         assertApproxEqAbs(engine.owed(address(rt)), 0.33 ether, 0.05 ether);
     }
 

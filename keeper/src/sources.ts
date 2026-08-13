@@ -40,7 +40,7 @@ export const staticSource: PriceSource = {
 
 /// Simulated LIVE feed: random-walks the static quotes so prices move on their own each tick, the
 /// way a real market data feed would. Use for a live-feeling testnet demo without a data subscription.
-/// NOT for production — production uses `tradingeconomics` (real prices). Values mean-revert slightly
+/// NOT for production - production uses `tradingeconomics` (real prices). Values mean-revert slightly
 /// toward the anchor so they wander realistically instead of drifting away.
 const simState: Record<string, number> = { ...STATIC_QUOTES };
 export const simulatedSource: PriceSource = {
@@ -61,13 +61,13 @@ export const simulatedSource: PriceSource = {
     },
 };
 
-/// Trading Economics official API adapter (the chosen production source — serves all 13 commodities
+/// Trading Economics official API adapter (the chosen production source - serves all 13 commodities
 /// incl. a continuous front-month grain series, which the free feeds do not). Requires TE_API_KEY.
 ///
 /// Verified live (2026-08): `/markets/commodities` returns one row per commodity carrying a stable
 /// `URL` of the form `/commodity/<slug>` that maps 1:1 to our `teSlug` (all 13 resolve), a `Last`
 /// price, and a `unit` ("USD/Bbl", "USd/Bu", …) whose USd-prefix == US cents, matching the currency in
-/// commodities.ts. So we match on the URL slug (exact — far more robust than a name substring) and
+/// commodities.ts. So we match on the URL slug (exact - far more robust than a name substring) and
 /// return `Last`; the existing normalize step applies the cents/dollars split. A `USd/...` unit that
 /// disagrees with our recorded currency is warned about (a guard against TE changing a quote unit).
 export const tradingEconomicsSource: PriceSource = {
@@ -81,7 +81,7 @@ export const tradingEconomicsSource: PriceSource = {
         if (!res.ok) throw new Error(`TE fetch failed: ${res.status} ${res.statusText}`);
         const rows = (await res.json()) as Array<Record<string, unknown>>;
 
-        // Index rows by their /commodity/<slug> URL — an exact, stable key that matches our teSlug.
+        // Index rows by their /commodity/<slug> URL - an exact, stable key that matches our teSlug.
         const bySlug = new Map<string, Record<string, unknown>>();
         for (const row of rows) {
             const m = /\/commodity\/([a-z0-9-]+)/.exec(String(row["URL"] ?? ""));
@@ -106,7 +106,7 @@ export const tradingEconomicsSource: PriceSource = {
             const teIsCents = teUnit.startsWith("USd") || /cents/i.test(teUnit);
             if (teIsCents !== (s.currency === "USd")) {
                 console.warn(
-                    `[keeper] TE: unit "${teUnit}" disagrees with ${s.symbol} currency=${s.currency} — check commodities.ts`,
+                    `[keeper] TE: unit "${teUnit}" disagrees with ${s.symbol} currency=${s.currency} - check commodities.ts`,
                 );
             }
             out.set(s.symbol, last);
@@ -118,11 +118,11 @@ export const tradingEconomicsSource: PriceSource = {
 /// Pyth Network clean-SPOT feed IDs (verified LIVE against Hermes, 2026-08). These are the only
 /// commodities Pyth actually publishes as a genuine, continuous spot price. ⚠️ Grains/softs/natgas are
 /// NOT here for a hard reason discovered by probing: their Pyth futures feeds (COU6, WHZ6, SOU6, CFU6,
-/// RSV6, NGDU6, …) all exist in the catalog but return price:0 / publish_time:0 — DEAD, publishing
+/// RSV6, NGDU6, …) all exist in the catalog but return price:0 / publish_time:0 - DEAD, publishing
 /// nothing. Of all 126 Pyth "Commodities" feeds only 5 are live, all oil (WTI/Brent spot + WTI dated
 /// futures). So there is nothing to build a roll layer on; grains come from the `yahoo` source instead.
-/// COPPER's XCU/USD is also dead (price 0) — kept here but the guard skips it. Rice/cotton have no Pyth
-/// feed at all. ⚠️ CRUDE_OIL uses USOILSPOT (WTI) — NOT XTI, which is Titanium. See CLAUDE.md.
+/// COPPER's XCU/USD is also dead (price 0) - kept here but the guard skips it. Rice/cotton have no Pyth
+/// feed at all. ⚠️ CRUDE_OIL uses USOILSPOT (WTI) - NOT XTI, which is Titanium. See CLAUDE.md.
 const PYTH_SPOT_FEED_IDS: Record<string, string> = {
     GOLD: "765d2ba906dbc32ca17cc11f5310a89e9ee1f6420508c63861f2f8ba4ee34bb2", // XAU/USD
     SILVER: "f2fb02c32b055c805e7238d628e5e9dadef274376114eb1f012337cabe93871e", // XAG/USD
@@ -154,7 +154,7 @@ export function pythLegToNumber(leg: PythPriceLeg): number {
     return Number(leg.price) * 10 ** leg.expo;
 }
 
-/// Pyth Network adapter (free public Hermes API — no key; redistribution-clean). Fetches the latest
+/// Pyth Network adapter (free public Hermes API - no key; redistribution-clean). Fetches the latest
 /// spot price for every requested commodity that has a clean-spot feed, converts mantissa*10^expo to
 /// a USD number, and drops feeds that are stale (see PYTH_MAX_STALE_SEC). Returns USD directly, so the
 /// commodity's `currency: "USD"` flows through normalizeToE8 untouched. Commodities without a spot feed
@@ -185,7 +185,7 @@ export const pythSource: PriceSource = {
             }
             const ageSec = nowSec - f.price.publish_time;
             if (config.pythMaxStaleSec > 0 && ageSec > config.pythMaxStaleSec) {
-                console.warn(`[keeper] pyth: ${s.symbol} stale (${ageSec}s old) — skipping, market likely closed`);
+                console.warn(`[keeper] pyth: ${s.symbol} stale (${ageSec}s old) - skipping, market likely closed`);
                 continue;
             }
             const value = pythLegToNumber(f.price);
@@ -200,20 +200,20 @@ export const pythSource: PriceSource = {
 };
 
 /// Yahoo Finance continuous front-month futures (`ROOT=F`). Yahoo already stitches each `=F` symbol
-/// into a continuous, back-adjusted series, so NO roll adapter is needed. Covers the whole registry —
+/// into a continuous, back-adjusted series, so NO roll adapter is needed. Covers the whole registry -
 /// crucially the grains/softs Pyth can't (corn/wheat/soybeans/coffee/sugar/natgas) PLUS rice & cotton,
 /// which have no Pyth feed at all, and copper (HG=F) whose Pyth feed is dead.
 ///
 /// Units follow the same convention Trading Economics uses (and commodities.ts already encodes): grains
 /// & softs quote in US CENTS (currency "USd" → normalizeToE8 divides by 100), metals/energy/rice in
 /// dollars. So this source returns Yahoo's raw `regularMarketPrice` and the existing normalize step
-/// handles the cents/dollars split — the same field mapping metals+grains already rely on.
+/// handles the cents/dollars split - the same field mapping metals+grains already rely on.
 ///
 /// ⚠️ Unofficial API. Yahoo now rejects sessionless requests with a misleading 429 ("Too Many
 /// Requests" really means "no valid session"), so we do the standard handshake: grab an A1 cookie from
 /// fc.yahoo.com, exchange it for a crumb at /v1/test/getcrumb, then send both on every chart call and
 /// rebuild the session if it goes stale. Yahoo ALSO hard-blocks datacenter IP ranges (no cookie ever
-/// set) — that can't be worked around; run the keeper from a normal residential/host IP. Treat this
+/// set) - that can't be worked around; run the keeper from a normal residential/host IP. Treat this
 /// source as testnet/demo-grade, not mainnet-grade.
 const YAHOO_SYMBOLS: Record<string, string> = {
     GOLD: "GC=F",
@@ -295,7 +295,7 @@ async function fetchYahooQuote(ticker: string, session: YahooSession): Promise<Y
         headers: {"User-Agent": YAHOO_UA, Accept: "application/json", Cookie: session.cookie},
     });
     if (res.status === 401 || res.status === 429) {
-        yahooSession = null; // stale/blocked — force a rebuild on the next tick
+        yahooSession = null; // stale/blocked - force a rebuild on the next tick
         throw new Error(`Yahoo ${res.status} for ${ticker} (session invalidated, retrying next tick)`);
     }
     if (!res.ok) throw new Error(`Yahoo fetch failed for ${ticker}: ${res.status} ${res.statusText}`);
@@ -316,7 +316,7 @@ export const yahooSource: PriceSource = {
         try {
             session = yahooSession ?? (yahooSession = await establishYahooSession());
         } catch (e) {
-            console.warn(`[keeper] yahoo: session setup failed — ${(e as Error).message}`);
+            console.warn(`[keeper] yahoo: session setup failed - ${(e as Error).message}`);
             return out;
         }
 
@@ -343,7 +343,7 @@ export const yahooSource: PriceSource = {
                 nowSec - meta.regularMarketTime > config.yahooMaxStaleSec
             ) {
                 const age = nowSec - meta.regularMarketTime;
-                console.warn(`[keeper] yahoo: ${s.symbol} stale (${age}s) — skipping, market likely closed`);
+                console.warn(`[keeper] yahoo: ${s.symbol} stale (${age}s) - skipping, market likely closed`);
                 continue;
             }
             out.set(s.symbol, price);

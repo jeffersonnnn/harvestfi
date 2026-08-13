@@ -24,7 +24,7 @@ import {IPerpEngine} from "./interfaces/IPerpEngine.sol";
 ///         - Funding: peer-to-peer skew fee routed through the pool (longs pay shorts when long-heavy).
 ///         - Borrow fee (see DECISIONS.md D1): paid only by the heavier-OI side, scaling with pool
 ///           utilization, and accruing to the LP pool as compensation for reserved capital. It does
-///           NOT touch the 70/30 trading-fee split — it nets into the PnL settled against the pool.
+///           NOT touch the 70/30 trading-fee split - it nets into the PnL settled against the pool.
 contract PerpEngine is IPerpEngine, Ownable, ReentrancyGuard, Pausable {
     uint256 public constant BPS = 10_000;
     uint256 public constant PRICE_SCALE = 1e8; // oracle prices are USD * 1e8
@@ -224,7 +224,7 @@ contract PerpEngine is IPerpEngine, Ownable, ReentrancyGuard, Pausable {
     // --------------------------------------------------------------------- //
 
     /// @dev PnL in wei including funding. Price PnL = size * (mark - entry) / entry (sign per side);
-    ///      funding = size * (cumIndexNow - entryIndex) / 1e18 — longs pay it, shorts receive it.
+    ///      funding = size * (cumIndexNow - entryIndex) / 1e18 - longs pay it, shorts receive it.
     function _pnl(Position memory pos, uint256 price, int256 cumIndexNow) internal pure returns (int256 pnl) {
         int256 pricePnl = (int256(pos.sizeEth) * (int256(price) - int256(pos.entryPrice))) / int256(pos.entryPrice);
         if (!pos.isLong) pricePnl = -pricePnl;
@@ -256,7 +256,7 @@ contract PerpEngine is IPerpEngine, Ownable, ReentrancyGuard, Pausable {
         uint256 collateral = pos.collateral;
 
         // Flat liquidation fee, taken from collateral FIRST so liquidating an insolvent position is
-        // still profitable — fixes the "no incentive at zero equity" gap (DECISIONS.md D2).
+        // still profitable - fixes the "no incentive at zero equity" gap (DECISIONS.md D2).
         uint256 liqFee = 0;
         if (liquidated) {
             liqFee = (collateral * liquidationFeeBps) / BPS;
@@ -434,7 +434,7 @@ contract PerpEngine is IPerpEngine, Ownable, ReentrancyGuard, Pausable {
     }
 
     /// @notice PnL at the current mark using the last-accrued funding index (view approximation;
-    ///         excludes the borrow fee — see {pendingBorrowFee}).
+    ///         excludes the borrow fee - see {pendingBorrowFee}).
     function unrealizedPnl(uint256 positionId) external view returns (int256) {
         Position memory pos = positions[positionId];
         require(pos.trader != address(0), "no position");

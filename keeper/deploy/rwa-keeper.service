@@ -1,5 +1,5 @@
 [Unit]
-# RWA Perps price keeper — always-on systemd service for a Linux VPS.
+# RWA Perps price keeper - always-on systemd service for a Linux VPS.
 # Install: see keeper/deploy/README.md. Secrets live in /etc/rwa-keeper.env (chmod 600), NOT here.
 Description=RWA Perps price keeper (normalize -> sign -> post)
 After=network-online.target

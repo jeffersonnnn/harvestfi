@@ -109,7 +109,7 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
         reportClose(receipt.transactionHash);
       }
     } catch {
-      /* non-close tx (e.g. redeem) — no banner */
+      /* non-close tx (e.g. redeem) - no banner */
     }
     closingSnap.current = null;
     queryClient.invalidateQueries();
@@ -131,7 +131,7 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
 
   // A live (unrealized) card for an open position: exit = current mark, PnL = unrealized.
   function openCard(p: PositionView): PnlCardData | null {
-    if (p.pnl === null) return null; // stale price — no meaningful card
+    if (p.pnl === null) return null; // stale price - no meaningful card
     const m = marketOf(p.commodityId);
     return {
       symbol: symbolOf(p.commodityId),
@@ -247,7 +247,7 @@ export function PositionsDashboard({ markets }: { markets: MarketInfo[] }) {
                         : `${pnlPos ? "+" : ""}${formatETH(p.pnl, 6)}`}
                     </td>
                     <td className="text-right text-bone/50">
-                      {p.borrowFee === null ? "—" : formatETH(p.borrowFee, 6)}
+                      {p.borrowFee === null ? "-" : formatETH(p.borrowFee, 6)}
                     </td>
                     <td className="text-right">
                       <div className="flex items-center justify-end gap-2">

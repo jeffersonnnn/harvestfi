@@ -36,7 +36,7 @@ async function buildUpdates(nowSec: bigint): Promise<Update[]> {
     for (const c of markets) {
         const r = raw.get(c.symbol);
         if (r === undefined) {
-            console.warn(`[keeper] no quote for ${c.symbol} (id ${c.id}) — skipping`);
+            console.warn(`[keeper] no quote for ${c.symbol} (id ${c.id}) - skipping`);
             continue;
         }
         try {
@@ -70,7 +70,7 @@ export async function runOnce(): Promise<void> {
     }
 
     if (config.dryRun) {
-        console.log(`[keeper] DRY_RUN — would post ${updates.length} price(s) at ts=${nowSec}:`);
+        console.log(`[keeper] DRY_RUN - would post ${updates.length} price(s) at ts=${nowSec}:`);
         for (const u of updates) {
             console.log(`  id ${u.id} ${u.symbol.padEnd(12)} ${u.priceE8.toString()} (1e8 USD)`);
         }
@@ -85,7 +85,7 @@ export async function runOnce(): Promise<void> {
     let toPost: Update[];
     if (config.postBatchLimit > 0) {
         // CPU-limited host (e.g. Cloudflare Workers free): post the next N markets round-robin, with
-        // NO on-chain reads — nowSec is always ahead of each market's last post (it cycles every few
+        // NO on-chain reads - nowSec is always ahead of each market's last post (it cycles every few
         // ticks), so the strictly-increasing-ts rule holds without checking. Minimal CPU per tick.
         const n = Math.min(config.postBatchLimit, updates.length);
         toPost = [];

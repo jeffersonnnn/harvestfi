@@ -25,7 +25,7 @@ contract PerpInvariantTest is Base {
         assertEq(engine.globalOpenNotional(), handler.gNotional());
     }
 
-    /// The engine always holds at least the margin it owes open positions plus the insurance fund —
+    /// The engine always holds at least the margin it owes open positions plus the insurance fund -
     /// i.e. it can never become insolvent on its own obligations.
     function invariant_engineSolvency() public view {
         assertGe(address(engine).balance, handler.gCollateral() + engine.insuranceFund());

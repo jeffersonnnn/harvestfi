@@ -30,7 +30,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: `${BRAND.name} — ${BRAND.tagline}`,
+  title: `${BRAND.name} - ${BRAND.tagline}`,
   description:
     "Trade perpetual futures on corn, wheat, coffee, cocoa and 19 more real-world crops. Or own a market's license NFT and earn 70% of its fees.",
 };

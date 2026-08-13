@@ -7,7 +7,7 @@ import { ConnectButton } from "./connect-button";
 import { BRAND } from "@/lib/brand";
 import { IS_TESTNET } from "@/lib/chain";
 
-// Web-optimized (faststart) local copy of the supplied hero video — served same-origin
+// Web-optimized (faststart) local copy of the supplied hero video - served same-origin
 // so it streams instantly. Poster paints a still frame until the first video frame is ready.
 const HERO_VIDEO = "/hero.mp4";
 const HERO_POSTER = "/hero-poster.jpg";
@@ -135,7 +135,7 @@ export function HomeHero() {
             <div className="hidden md:block">
               <ConnectButton />
             </div>
-            {/* Hamburger — mobile only */}
+            {/* Hamburger - mobile only */}
             <button
               onClick={() => setOpen((v) => !v)}
               aria-label={open ? "Close menu" : "Open menu"}
@@ -157,7 +157,7 @@ export function HomeHero() {
           </div>
         </nav>
 
-        {/* Hero content — our copy, Atelier layout */}
+        {/* Hero content - our copy, Atelier layout */}
         <div className="flex flex-1 flex-col items-center justify-start px-6 pt-6 text-center sm:pt-8 md:pt-10 lg:pt-12">
           <p className="label mb-5 text-white/70">Perpetual futures · real-world commodities</p>
 
@@ -168,7 +168,7 @@ export function HomeHero() {
           </h1>
 
           <p className="mt-5 max-w-xl text-sm font-light leading-relaxed text-white/75 md:mt-6 md:text-base">
-            HarvestFi brings the world&apos;s commodity markets on-chain as perpetual futures —
+            HarvestFi brings the world&apos;s commodity markets on-chain as perpetual futures -
             starting with 23 farm commodities. Trade them with leverage in native ETH, or mint a
             market&apos;s license NFT and collect 70% of every fee it earns.
           </p>
@@ -268,7 +268,7 @@ export function HomeHero() {
             ))}
           </div>
 
-          {/* Footer — wallet + CTA */}
+          {/* Footer - wallet + CTA */}
           <div
             className="flex flex-col gap-3 px-6 pb-10"
             style={{

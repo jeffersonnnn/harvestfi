@@ -1,4 +1,4 @@
-// Minimal PerpEngine ABI for indexing — the position lifecycle events only.
+// Minimal PerpEngine ABI for indexing - the position lifecycle events only.
 // Param lists verified against contracts/src/PerpEngine.sol + app/src/lib/abis.ts (2026-08-12).
 export const PerpEngineAbi = [
     {

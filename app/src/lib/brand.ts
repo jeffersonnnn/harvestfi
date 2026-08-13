@@ -1,4 +1,4 @@
-// Central brand identity — rename here in one place.
+// Central brand identity - rename here in one place.
 export const BRAND = {
   name: "HarvestFi",
   short: "HarvestFi",

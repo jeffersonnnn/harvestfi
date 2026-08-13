@@ -34,7 +34,7 @@ async function indexTick(env: Env): Promise<void> {
   const c = client(env);
   const stmts: D1PreparedStatement[] = [];
 
-  // 1) Positions — this RPC returns [] for eth_getLogs, so read positions DIRECTLY: nextPositionId
+  // 1) Positions - this RPC returns [] for eth_getLogs, so read positions DIRECTLY: nextPositionId
   // gives the id space; one multicall of getPosition(0..N-1) reads them all. Open positions have a
   // non-zero trader; getPosition returns zero once a position is closed (we mark those closed).
   const nextId = Number(
@@ -80,7 +80,7 @@ async function indexTick(env: Env): Promise<void> {
           ),
         );
       } else {
-        // Closed on-chain (getPosition zeroed) — flip any row we had to closed. Realized PnL/exit
+        // Closed on-chain (getPosition zeroed) - flip any row we had to closed. Realized PnL/exit
         // aren't available from reads (logs are dead); the app captures those from the close receipt.
         stmts.push(
           env.DB.prepare("UPDATE positions SET status='closed', closed_at=? WHERE id=? AND status='open'").bind(
@@ -92,7 +92,7 @@ async function indexTick(env: Env): Promise<void> {
     });
   }
 
-  // 2) Price snapshots — read every listed market's current oracle price (one multicall) and store it.
+  // 2) Price snapshots - read every listed market's current oracle price (one multicall) and store it.
   const count = Number(
     await c.readContract({ address: env.REGISTRY_ADDRESS, abi: registryAbi, functionName: "count" }),
   );
@@ -128,7 +128,7 @@ const CORS = {
 const json = (data: unknown) => new Response(JSON.stringify(data), { headers: CORS });
 
 // Record a close from its transaction receipt: fetch the receipt (works even though eth_getLogs
-// doesn't), decode the real PositionClosed event, and write the realized PnL/exit/payout. Trustless —
+// doesn't), decode the real PositionClosed event, and write the realized PnL/exit/payout. Trustless -
 // the values come from the on-chain receipt, not the caller.
 async function recordClose(env: Env, txHash: string): Promise<Response> {
   if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) return json({ error: "bad txHash" });

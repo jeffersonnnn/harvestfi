@@ -1,4 +1,4 @@
-# RWA Perps — Price Keeper (Phase 2)
+# RWA Perps - Price Keeper (Phase 2)
 
 Off-chain service that pushes commodity prices to the on-chain `PushPriceOracle`. It pulls quotes,
 **normalizes them to USD × 1e8**, signs `(chainId, oracle, commodityId, price, timestamp)`, and calls
@@ -17,7 +17,7 @@ currency table lives in `src/commodities.ts`; conversion is in `src/normalize.ts
 
 | File | Role |
 |---|---|
-| `src/commodities.ts` | `commodityId → {symbol, teSlug, currency, unit}` — source of truth for cents/dollars |
+| `src/commodities.ts` | `commodityId → {symbol, teSlug, currency, unit}` - source of truth for cents/dollars |
 | `src/normalize.ts` | raw quote → 1e8 USD (handles `USd` cents, `GBp` pence, FX) |
 | `src/fx.ts` | foreign→USD rates (only used once non-USD commodities are listed) |
 | `src/sign.ts` | contract-matching digest + EIP-191 signature |
@@ -44,10 +44,10 @@ For live posting, set `DRY_RUN=false`, a real `ORACLE_ADDRESS`, `RPC_URL`, and t
   reads it from an env var (matching the sibling keepers); production should use a KMS/HSM signer. See
   `../contracts/DECISIONS.md`.
 - **Data source.** `PRICE_SOURCE=static` ships a last-observed fixture so the pipeline is runnable and
-  tested offline. `PRICE_SOURCE=tradingeconomics` uses the official TE API (`TE_API_KEY` required) —
+  tested offline. `PRICE_SOURCE=tradingeconomics` uses the official TE API (`TE_API_KEY` required) -
   verify the response field mapping against your plan. Scraping the public page is fragile and may
   violate TE's ToS; not the default.
 - **Signature compatibility.** `signPrice` builds `keccak256(abi.encode(...))` with the exact field
-  order/types as `PushPriceOracle.priceDigest` and signs it with the EIP-191 personal prefix — the same
+  order/types as `PushPriceOracle.priceDigest` and signs it with the EIP-191 personal prefix - the same
   scheme the contract's Foundry tests already prove the Solidity side accepts. `test/sign.test.ts`
   additionally checks the signature recovers to the signer.

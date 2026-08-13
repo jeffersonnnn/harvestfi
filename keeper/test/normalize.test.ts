@@ -8,7 +8,7 @@ test("dollars pass through at 1e8", () => {
     assert.equal(normalizeToE8(13.9296, "USD"), 1392960000n);
 });
 
-test("US cents (USd) are divided by 100 — the corn trap", () => {
+test("US cents (USd) are divided by 100 - the corn trap", () => {
     // Corn 441.7116 USd/Bu = $4.417116/Bu
     assert.equal(normalizeToE8(441.7116, "USd"), 441711600n);
     // Guard against the 100x mistake:

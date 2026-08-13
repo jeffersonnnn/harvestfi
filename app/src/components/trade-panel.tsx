@@ -148,7 +148,7 @@ export function TradePanel({ market, onClose }: { market: MarketInfo; onClose: (
           <Row label="Open fee" value={`${openFee.toFixed(6)} ETH`} sub />
           <Row
             label="Est. liquidation"
-            value={liqUsd > 0 ? formatUsdPrice(BigInt(Math.round(liqUsd * 1e8))) : "—"}
+            value={liqUsd > 0 ? formatUsdPrice(BigInt(Math.round(liqUsd * 1e8))) : "-"}
             tone={tone}
           />
           <p className="pt-1 text-[0.7rem] leading-snug text-bone/35">

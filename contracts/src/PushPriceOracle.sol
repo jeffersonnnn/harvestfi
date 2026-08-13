@@ -12,7 +12,7 @@ import {IPushPriceOracle} from "./interfaces/IPushPriceOracle.sol";
 ///         them here. The contract verifies the ECDSA signature against a trusted signer and
 ///         enforces monotonic, non-future, non-stale timestamps.
 ///
-///         NORMALIZATION (keeper responsibility — see KEEPER.md): the source (Trading Economics)
+///         NORMALIZATION (keeper responsibility - see KEEPER.md): the source (Trading Economics)
 ///         quotes commodities in heterogeneous units and currencies. Grains/softs are in US CENTS
 ///         ("USd", e.g. Corn 441.71 USd/Bu => $4.4171), metals in USD, and others in EUR/GBp/MYR/
 ///         INR/BRL/NOK/CAD/AUD. The keeper MUST convert cents->dollars and apply FX to USD BEFORE

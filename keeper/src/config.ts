@@ -13,12 +13,12 @@ export const config = {
     // When set, the keeper DISCOVERS the market set (ids + symbols) from the on-chain registry, so
     // listing a new market needs no keeper code change. Unset (zero) => fall back to the static catalog.
     registryAddress: env("REGISTRY_ADDRESS", "0x0000000000000000000000000000000000000000") as Address,
-    // Default is the well-known Anvil dev key #0 — a PLACEHOLDER so dry-run works out of the box.
+    // Default is the well-known Anvil dev key #0 - a PLACEHOLDER so dry-run works out of the box.
     // MUST be overridden with the real trusted-signer key for any live posting.
     privateKey: env("PRIVATE_KEY", "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80") as Hex,
     postIntervalMs: Number(env("POST_INTERVAL_MS", "60000")),
     // Cap how many (stalest-first) markets to sign+post per tick. 0 = no cap (all). Used to fit the
-    // Cloudflare Workers free-plan CPU limit — signing is the cost, so posting the N stalest per tick
+    // Cloudflare Workers free-plan CPU limit - signing is the cost, so posting the N stalest per tick
     // cycles all markets over a few ticks. On an unmetered host (or Workers Paid) leave 0.
     postBatchLimit: Number(env("POST_BATCH_LIMIT", "0")),
     minMoveBps: Number(env("MIN_MOVE_BPS", "0")),
@@ -32,7 +32,7 @@ export const config = {
     // Yahoo Finance source (grains + full registry, incl. rice/cotton which Pyth lacks).
     yahooBaseUrl: env("YAHOO_BASE_URL", "https://query1.finance.yahoo.com"),
     // Skip a Yahoo quote whose regularMarketTime is older than this (seconds); 0 disables (post last
-    // close continuously — nicer for a 24/7 demo; enable it to respect real CME session hours).
+    // close continuously - nicer for a 24/7 demo; enable it to respect real CME session hours).
     yahooMaxStaleSec: Number(env("YAHOO_MAX_STALE_SEC", "0")),
     fxApiUrl: env("FX_API_URL", "https://open.er-api.com/v6/latest/USD"),
     dryRun: env("DRY_RUN", "true").toLowerCase() === "true",

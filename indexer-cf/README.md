@@ -1,4 +1,4 @@
-# RWA Perps indexer — Cloudflare Worker + D1
+# RWA Perps indexer - Cloudflare Worker + D1
 
 Always-on, no VPS. A cron Worker indexes the chain into **D1** (Cloudflare's SQLite) and serves a
 read API the frontend uses for **positions**, **price history/sparklines**, and the **`/card/[id]` OG**
@@ -11,9 +11,9 @@ lookup. Replaces the (VPS-bound) Ponder scaffold in `../indexer/`.
   table (one snapshot per market per tick; PK dedupes).
 
 ## API (workers.dev URL after deploy)
-- `GET /positions?trader=0x…` — a trader's positions (open + closed).
-- `GET /position/{id}` — one position (for the OG card).
-- `GET /prices?market={id}&limit={n}` — price history, chronological (for sparklines).
+- `GET /positions?trader=0x…` - a trader's positions (open + closed).
+- `GET /position/{id}` - one position (for the OG card).
+- `GET /prices?market={id}&limit={n}` - price history, chronological (for sparklines).
 
 ## Setup (one time)
 ```bash

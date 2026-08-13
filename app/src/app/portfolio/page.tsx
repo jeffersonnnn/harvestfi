@@ -44,7 +44,7 @@ export default function PortfolioPage() {
 
       {/* Stat tiles */}
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-bone/10 bg-bone/10 lg:grid-cols-4">
-        <Tile label="Wallet balance" value={bal ? formatETH(bal.value) : "—"} unit="ETH" />
+        <Tile label="Wallet balance" value={bal ? formatETH(bal.value) : "-"} unit="ETH" />
         <Tile label="Open margin" value={formatETH(margin)} unit="ETH" />
         <Tile
           label="Unrealized PnL"
@@ -70,7 +70,7 @@ export default function PortfolioPage() {
         </div>
         {myLicenses.length === 0 ? (
           <p className="rounded-2xl border border-bone/10 bg-soil-900/40 px-5 py-6 text-sm text-bone/45">
-            You don&apos;t hold any market licenses. Each earns 70% of its market&apos;s trading fees —{" "}
+            You don&apos;t hold any market licenses. Each earns 70% of its market&apos;s trading fees -{" "}
             <Link href="/licenses" className="text-wheat hover:underline">
               mint one
             </Link>

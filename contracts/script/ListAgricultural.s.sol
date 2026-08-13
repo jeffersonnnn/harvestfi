@@ -5,7 +5,7 @@ import {Script} from "forge-std/Script.sol";
 import {CommodityRegistry} from "../src/CommodityRegistry.sol";
 
 /// Lists the remaining 16 agricultural markets (beyond the 7 launch fighters) onto an existing
-/// registry. Order MUST match keeper `commodities.ts` ids 13–28 so on-chain ids line up.
+/// registry. Order MUST match keeper `commodities.ts` ids 13-28 so on-chain ids line up.
 /// Run: REGISTRY_ADDRESS=0x.. forge script script/ListAgricultural.s.sol --rpc-url <rpc> --broadcast --private-key <owner>
 contract ListAgricultural is Script {
     function run() external {

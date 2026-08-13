@@ -11,7 +11,7 @@ import {IFeeManager} from "./interfaces/IFeeManager.sol";
 ///
 ///         Fees accrue into a per-commodity bucket claimable by whoever holds the license *now*.
 ///         When a license is transferred, the NFT calls {onLicenseTransfer}, which settles the
-///         bucket to the outgoing owner's personal balance and zeroes it — so the seller keeps
+///         bucket to the outgoing owner's personal balance and zeroes it - so the seller keeps
 ///         everything earned before the sale and the buyer earns cleanly from the sale forward.
 contract FeeManager is IFeeManager, ReentrancyGuard {
     uint256 public constant BPS = 10_000;

@@ -1,6 +1,6 @@
 import {type CommoditySpec} from "../src/commodities.js";
 
-/// Fixed commodity specs for SOURCE tests — deliberately independent of the production catalog
+/// Fixed commodity specs for SOURCE tests - deliberately independent of the production catalog
 /// (commodities.ts), so changing the tradable market set doesn't break tests of source/normalize
 /// logic. Includes metals (for the pyth/yahoo source tests) even though the live product is ag-only.
 const SPECS: Record<string, CommoditySpec> = {

@@ -73,7 +73,7 @@ export function LicensesTable({ markets }: { markets: MarketInfo[] }) {
                 key={m.id}
                 className="border-b border-bone/5 transition-colors last:border-0 hover:bg-bone/[0.02] [&>td]:px-4 [&>td]:py-3.5"
               >
-                {/* Commodity — glyph as the license's visual identity */}
+                {/* Commodity - glyph as the license's visual identity */}
                 <td>
                   <div className="flex items-center gap-3">
                     <span className="grid h-9 w-9 place-items-center rounded-md bg-soil-800 text-lg">

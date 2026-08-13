@@ -151,7 +151,7 @@ contract PushPriceOracleTest is OracleSigner {
         emit PriceRejected(1, 130e8, 100e8, 2_000_060);
         _post(1, 130e8, 2_000_060, signerPk); // +30%, dropped (no revert)
 
-        // Price and timestamp are unchanged — the outlier never landed.
+        // Price and timestamp are unchanged - the outlier never landed.
         (int256 p, uint64 t) = oracle.getPrice(1);
         assertEq(p, 100e8);
         assertEq(t, 2_000_000);

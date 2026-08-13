@@ -1,4 +1,4 @@
--- RWA Perps indexer — Cloudflare D1 (SQLite) schema.
+-- RWA Perps indexer - Cloudflare D1 (SQLite) schema.
 -- Apply: wrangler d1 execute rwa-perps --file=schema.sql   (add --remote to apply to the deployed DB)
 
 -- One row per position, updated across its open -> close lifecycle. bigints stored as TEXT.

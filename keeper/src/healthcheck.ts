@@ -27,7 +27,7 @@ async function main() {
     }
     const ageSec = Math.floor(Date.now() / 1000) - Number(ts);
     if (ageSec > maxAgeSec) {
-        console.error(`[health] STALE: market ${MARKET_ID} price is ${ageSec}s old (> ${maxAgeSec}s) — keeper down?`);
+        console.error(`[health] STALE: market ${MARKET_ID} price is ${ageSec}s old (> ${maxAgeSec}s) - keeper down?`);
         process.exit(1);
     }
     console.log(`[health] OK: market ${MARKET_ID} price ${age(ageSec)} old`);

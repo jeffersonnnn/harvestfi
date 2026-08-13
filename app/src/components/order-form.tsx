@@ -111,7 +111,7 @@ export function OrderForm({ market }: { market: MarketInfo }) {
         <Row label="Open fee" value={`${openFee.toFixed(6)} ETH`} sub />
         <Row
           label="Est. liquidation"
-          value={liqUsd > 0 ? formatUsdPrice(BigInt(Math.round(liqUsd * 1e8))) : "—"}
+          value={liqUsd > 0 ? formatUsdPrice(BigInt(Math.round(liqUsd * 1e8))) : "-"}
           tone={isLong ? "field" : "rust"}
         />
       </div>

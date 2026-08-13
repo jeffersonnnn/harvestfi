@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Soil — warm near-black surface scale (not pure black) */
+  /* Soil - warm near-black surface scale (not pure black) */
   --color-soil-950: #141009;
   --color-soil-900: #1b1610;
   --color-soil-850: #211b12;
@@ -10,10 +10,10 @@
   --color-soil-600: #4d4030;
 
   /* Ink + accents */
-  --color-bone: #f2e9d6; /* primary text — warm cream */
-  --color-wheat: #e4b24a; /* primary accent — wheat gold */
-  --color-field: #93c069; /* longs / positive — field green */
-  --color-rust: #d16b41; /* shorts / negative — terracotta */
+  --color-bone: #f2e9d6; /* primary text - warm cream */
+  --color-wheat: #e4b24a; /* primary accent - wheat gold */
+  --color-field: #93c069; /* longs / positive - field green */
+  --color-rust: #d16b41; /* shorts / negative - terracotta */
 
   --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
   --font-body: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;

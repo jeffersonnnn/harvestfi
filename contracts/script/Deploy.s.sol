@@ -62,8 +62,8 @@ contract Deploy is Script {
     }
 
     /// @dev The market set: all 23 agricultural markets (this is a farm-commodities perp DEX).
-    ///      Order MUST match keeper commodities.ts ids 0–22. Lower leverage, OI-capped (thin markets).
-    ///      Fighters first (ids 0–6), then the rest. Prices are posted later by the keeper (1e8 USD).
+    ///      Order MUST match keeper commodities.ts ids 0-22. Lower leverage, OI-capped (thin markets).
+    ///      Fighters first (ids 0-6), then the rest. Prices are posted later by the keeper (1e8 USD).
     function _seedCommodities(CommodityRegistry registry) internal {
         // Launch fighters.
         _list(registry, "CORN", "Bu", "Agricultural", 10, 500, 500 ether);
@@ -109,7 +109,7 @@ contract Deploy is Script {
             CommodityRegistry.RiskParams({
                 maxLeverageX: maxLev,
                 maintenanceMarginBps: mmBps,
-                openFeeBps: 5, // 0.05% — mid of GMX's ~4-6bps general band (see DECISIONS.md)
+                openFeeBps: 5, // 0.05% - mid of GMX's ~4-6bps general band (see DECISIONS.md)
                 closeFeeBps: 5,
                 maxOpenInterestEth: oiCap
             })

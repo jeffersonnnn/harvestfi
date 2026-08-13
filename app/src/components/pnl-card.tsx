@@ -191,7 +191,7 @@ export function PnlCardModal({
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      /* clipboard image unsupported in this browser — download still works */
+      /* clipboard image unsupported in this browser - download still works */
     } finally {
       setBusy(null);
     }

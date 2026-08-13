@@ -8,7 +8,7 @@ post). Always-on in Cloudflare's edge, free tier, and the signing key is an encr
 cd keeper                      # the Worker reuses ../src (tick.ts + friends)
 npm install                    # keeper deps (viem)
 npm install -D wrangler        # the Cloudflare CLI
-npx wrangler login             # opens the browser — you approve (I can't do this step)
+npx wrangler login             # opens the browser - you approve (I can't do this step)
 ```
 
 ## Configure
@@ -24,7 +24,7 @@ npx wrangler login             # opens the browser — you approve (I can't do t
 ```bash
 cd keeper/worker
 npx wrangler dev --test-scheduled        # local run; hit http://localhost:8787/__scheduled to fire a tick
-npx wrangler deploy                      # live — the cron starts firing every minute
+npx wrangler deploy                      # live - the cron starts firing every minute
 npx wrangler tail                        # live logs: "posted N price(s): 0x..."
 ```
 
