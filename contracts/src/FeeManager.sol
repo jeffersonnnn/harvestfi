@@ -56,7 +56,6 @@ contract FeeManager is IFeeManager, ReentrancyGuard {
     }
 
     function setNFT(address nft_) external onlyOwner {
-        require(nft == address(0), "nft set");
         require(nft_ != address(0), "nft=0");
         nft = nft_;
     }

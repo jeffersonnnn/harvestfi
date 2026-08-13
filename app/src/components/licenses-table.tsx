@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import {
+  useAccount,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+  useReadContract,
+} from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLicenses } from "@/hooks/use-licenses";
 import { type MarketInfo } from "@/hooks/use-markets";
@@ -21,6 +26,15 @@ export function LicensesTable({ markets }: { markets: MarketInfo[] }) {
   const { licenses } = useLicenses(markets.length);
   const { writeContract, data: hash, isPending } = useWriteContract();
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  // Read the live on-chain mint price so the button + value always match the contract
+  // (the owner can change it via setMintPrice with no frontend redeploy).
+  const { data: mintPrice } = useReadContract({
+    address: LICENSE_NFT_ADDRESS,
+    abi: marketLicenseNFTAbi,
+    functionName: "mintPrice",
+    chainId: CHAIN_ID,
+  });
+  const price = (mintPrice as bigint | undefined) ?? MINT_PRICE_WEI;
   const queryClient = useQueryClient();
   useEffect(() => {
     if (isSuccess) queryClient.invalidateQueries();
@@ -33,7 +47,7 @@ export function LicensesTable({ markets }: { markets: MarketInfo[] }) {
       abi: marketLicenseNFTAbi,
       functionName: "mint",
       args: [BigInt(id)],
-      value: MINT_PRICE_WEI,
+      value: price,
       chainId: CHAIN_ID,
     });
   }
@@ -117,7 +131,7 @@ export function LicensesTable({ markets }: { markets: MarketInfo[] }) {
                       onClick={() => mint(m.id)}
                       className="rounded-full bg-wheat px-4 py-1.5 text-xs font-semibold text-soil-950 transition-colors hover:bg-wheat/90 disabled:opacity-40"
                     >
-                      Mint · {formatETH(MINT_PRICE_WEI, 2)} ETH
+                      Mint · {formatETH(price, 3)} ETH
                     </button>
                   ) : isHolder ? (
                     <button

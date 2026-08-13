@@ -827,7 +827,7 @@ export const marketLicenseNFTAbi = [
   },
   {
     "type": "function",
-    "name": "MINT_PRICE",
+    "name": "mintPrice",
     "inputs": [],
     "outputs": [
       {

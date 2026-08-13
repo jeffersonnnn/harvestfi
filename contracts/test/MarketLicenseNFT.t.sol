@@ -98,5 +98,33 @@ contract MarketLicenseNFTTest is Test {
         nft.mint{value: 0.02 ether}(id);
         string memory uri = nft.tokenURI(id);
         assertGt(bytes(uri).length, 0);
+        assertTrue(_startsWith(uri, "data:application/json;base64,"));
+    }
+
+    function test_setMintPrice_changesPrice() public {
+        nft.setMintPrice(0.002 ether);
+        assertEq(nft.mintPrice(), 0.002 ether);
+        vm.prank(alice);
+        vm.expectRevert("wrong price");
+        nft.mint{value: 0.02 ether}(id); // old price now rejected
+        vm.prank(alice);
+        nft.mint{value: 0.002 ether}(id);
+        assertEq(nft.ownerOf(id), alice);
+    }
+
+    function test_revert_setMintPrice_notOwner() public {
+        vm.prank(alice);
+        vm.expectRevert();
+        nft.setMintPrice(0.001 ether);
+    }
+
+    function _startsWith(string memory s, string memory prefix) internal pure returns (bool) {
+        bytes memory sb = bytes(s);
+        bytes memory pb = bytes(prefix);
+        if (sb.length < pb.length) return false;
+        for (uint256 i = 0; i < pb.length; i++) {
+            if (sb[i] != pb[i]) return false;
+        }
+        return true;
     }
 }
