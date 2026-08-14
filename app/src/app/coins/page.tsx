@@ -4,12 +4,14 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useLaunches } from "@/hooks/use-launches";
 import { useMarkets } from "@/hooks/use-markets";
+import { useEthUsd } from "@/hooks/use-eth-usd";
 import { CoinCard } from "@/components/coin-card";
 import { prettyName } from "@/lib/commodities-meta";
 
 export default function CoinsPage() {
   const { items, enabled, isLoading } = useLaunches();
   const { markets } = useMarkets();
+  const ethUsd = useEthUsd();
   const [filter, setFilter] = useState<number | "all">("all");
 
   const marketById = useMemo(() => new Map(markets.map((m) => [m.id, m])), [markets]);
@@ -53,7 +55,7 @@ export default function CoinsPage() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {shown.map((i) => (
-              <CoinCard key={i.token} item={i} market={marketById.get(i.marketId)} />
+              <CoinCard key={i.token} item={i} market={marketById.get(i.marketId)} ethUsd={ethUsd} />
             ))}
           </div>
         </>
