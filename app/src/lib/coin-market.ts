@@ -3,6 +3,7 @@ import {
   type Hex,
   type PublicClient,
   encodeAbiParameters,
+  encodeFunctionData,
   keccak256,
   parseAbi,
   parseAbiItem,
@@ -116,4 +117,66 @@ export async function fetchCoinStats(
 
 export function marketCapUsd(priceEth: number, ethUsd: number): number {
   return priceEth * ethUsd * Number(TOKEN_SUPPLY);
+}
+
+// ---- Uniswap v4 swap via UniversalRouter ----
+
+export const universalRouterAbi = parseAbi(["function execute(bytes commands, bytes[] inputs, uint256 deadline) payable"]);
+export const permit2Abi = parseAbi([
+  "function allowance(address owner, address token, address spender) view returns (uint160 amount, uint48 expiration, uint48 nonce)",
+  "function approve(address token, address spender, uint160 amount, uint48 expiration)",
+]);
+export const erc20AllowanceAbi = parseAbi([
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+]);
+
+const V4_SWAP = "0x10"; // UniversalRouter command
+const ACTIONS_SWAP_SETTLE_TAKE = "0x060c0f"; // SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL
+const POOL_KEY_COMPONENTS = [
+  { name: "currency0", type: "address" },
+  { name: "currency1", type: "address" },
+  { name: "fee", type: "uint24" },
+  { name: "tickSpacing", type: "int24" },
+  { name: "hooks", type: "address" },
+] as const;
+
+/** Build an exact-in v4 swap through the UniversalRouter. Buy = ETH->token (zeroForOne). */
+export function buildExactInSwap(args: {
+  token: Address;
+  zeroForOne: boolean;
+  amountIn: bigint;
+  amountOutMin: bigint;
+  deadline?: bigint;
+}): { to: Address; data: Hex; value: bigint } {
+  const { token, zeroForOne, amountIn, amountOutMin } = args;
+  const poolKey = { currency0: ZERO, currency1: token, fee: POOL_FEE, tickSpacing: POOL_TICK_SPACING, hooks: ZERO };
+  const inputCurrency = zeroForOne ? ZERO : token;
+  const outputCurrency = zeroForOne ? token : ZERO;
+
+  const swapParams = encodeAbiParameters(
+    [
+      {
+        type: "tuple",
+        components: [
+          { name: "poolKey", type: "tuple", components: POOL_KEY_COMPONENTS },
+          { name: "zeroForOne", type: "bool" },
+          { name: "amountIn", type: "uint128" },
+          { name: "amountOutMinimum", type: "uint128" },
+          { name: "hookData", type: "bytes" },
+        ],
+      },
+    ],
+    [{ poolKey, zeroForOne, amountIn, amountOutMinimum: amountOutMin, hookData: "0x" }]
+  );
+  const settleParams = encodeAbiParameters([{ type: "address" }, { type: "uint256" }], [inputCurrency, amountIn]);
+  const takeParams = encodeAbiParameters([{ type: "address" }, { type: "uint256" }], [outputCurrency, amountOutMin]);
+
+  const input = encodeAbiParameters(
+    [{ type: "bytes" }, { type: "bytes[]" }],
+    [ACTIONS_SWAP_SETTLE_TAKE, [swapParams, settleParams, takeParams]]
+  );
+  const deadline = args.deadline ?? BigInt(Math.floor(Date.now() / 1000) + 1200);
+  const data = encodeFunctionData({ abi: universalRouterAbi, functionName: "execute", args: [V4_SWAP, [input], deadline] });
+  return { to: UNIVERSAL_ROUTER, data, value: zeroForOne ? amountIn : 0n };
 }
