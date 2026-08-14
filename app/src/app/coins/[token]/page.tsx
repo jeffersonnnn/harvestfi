@@ -10,6 +10,7 @@ import { useMarkets } from "@/hooks/use-markets";
 import { PriceChart } from "@/components/price-chart";
 import { CoinTradePanel } from "@/components/coin-trade-panel";
 import { CoinAvatar } from "@/components/coin-avatar";
+import { StrategyPanel } from "@/components/strategy-panel";
 import { marketCapUsd } from "@/lib/coin-market";
 import { prettyName } from "@/lib/commodities-meta";
 import { EXPLORER_URL } from "@/lib/chain";
@@ -73,6 +74,8 @@ export default function CoinPage() {
         <Stat label="24h volume" value={loading && !stats ? "…" : fmtUsd(vol)} />
         <Stat label="Trades" value={stats ? String(stats.trades) : "…"} />
       </div>
+
+      <StrategyPanel positionId={launch?.positionId} marketSymbol={market?.symbol} ethUsd={ethUsd} />
 
       <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
         {/* chart */}
