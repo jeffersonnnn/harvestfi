@@ -32,6 +32,7 @@ export const launcherAbi = parseAbi([
 export const beneficiaryVaultAbi = parseAbi([
   "function ownerOf(uint256 tokenId) view returns (address)",
   "function claim(uint256 tokenId, uint256 minCurrency0Amount, uint256 minCurrency1Amount)",
+  "function safeTransferFrom(address from, address to, uint256 tokenId)",
 ]);
 
 export const launchRegistryAbi = parseAbi([

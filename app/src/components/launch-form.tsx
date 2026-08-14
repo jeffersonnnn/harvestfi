@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useAccount, usePublicClient, useWriteContract } from "wagmi";
+import { useAccount, usePublicClient, useWalletClient, useWriteContract } from "wagmi";
 import { type Address } from "viem";
 import { useMarkets } from "@/hooks/use-markets";
 import { CHAIN_ID, EXPLORER_URL } from "@/lib/chain";
@@ -10,8 +10,10 @@ import { truncateAddress } from "@/lib/format";
 import {
   LAUNCHER,
   LAUNCH_REGISTRY,
+  BENEFICIARY_VAULT,
   launcherAbi,
   launchRegistryAbi,
+  beneficiaryVaultAbi,
   buildCreateToken,
   buildDistributeToken,
   encodeConfigData,
@@ -22,12 +24,16 @@ import {
   hasRegistry,
   ipfsToHttp,
 } from "@/lib/launchpad";
+import { STRATEGY_VAULT_BYTECODE, strategyVaultAbi, buildStrategyConfig } from "@/lib/strategy-vault";
+
+const LEVERAGE_OPTIONS = [2, 5, 10];
 
 type Phase = "idle" | "working" | "done" | "error";
 
 export function LaunchForm() {
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
   const { writeContractAsync } = useWriteContract();
   const { markets } = useMarkets();
 
@@ -39,6 +45,10 @@ export function LaunchForm() {
   const [twitter, setTwitter] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  // Strategy mode
+  const [strategyOn, setStrategyOn] = useState(false);
+  const [isLong, setIsLong] = useState(true);
+  const [leverageX, setLeverageX] = useState(2);
 
   async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -66,9 +76,13 @@ export function LaunchForm() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [step, setStep] = useState("");
   const [error, setError] = useState("");
-  const [result, setResult] = useState<{ token: Address; positionId?: bigint; hash: string; registered: boolean } | null>(
-    null
-  );
+  const [result, setResult] = useState<{
+    token: Address;
+    positionId?: bigint;
+    hash: string;
+    registered: boolean;
+    strategyVault?: Address;
+  } | null>(null);
 
   const selectedMarket = useMemo(
     () => (marketId === null ? undefined : markets.find((m) => m.id === marketId)),
@@ -123,7 +137,32 @@ export function LaunchForm() {
         registered = true;
       }
 
-      setResult({ token, positionId, hash, registered });
+      // Strategy mode: deploy a StrategyVault and lock the fee NFT into it (fees now run the strategy).
+      let strategyVault: Address | undefined;
+      if (strategyOn && positionId !== undefined && walletClient) {
+        setStep("Deploy the strategy vault (confirm in your wallet)...");
+        const config = buildStrategyConfig(token, positionId, marketId, { isLong, leverageX });
+        const deployHash = await walletClient.deployContract({
+          abi: strategyVaultAbi,
+          bytecode: STRATEGY_VAULT_BYTECODE,
+          args: [config],
+        });
+        const deployRcpt = await publicClient.waitForTransactionReceipt({ hash: deployHash });
+        strategyVault = deployRcpt.contractAddress ?? undefined;
+        if (strategyVault) {
+          setStep("Lock the fee stream into the strategy (confirm in your wallet)...");
+          const lockHash = await writeContractAsync({
+            address: BENEFICIARY_VAULT,
+            abi: beneficiaryVaultAbi,
+            functionName: "safeTransferFrom",
+            args: [address, strategyVault, positionId],
+            chainId: CHAIN_ID,
+          });
+          await publicClient.waitForTransactionReceipt({ hash: lockHash });
+        }
+      }
+
+      setResult({ token, positionId, hash, registered, strategyVault });
       setPhase("done");
     } catch (e) {
       setError(e instanceof Error ? e.message.split("\n")[0] : "Launch failed");
@@ -144,9 +183,18 @@ export function LaunchForm() {
           <Row label="Launch tx" value={truncateAddress(result.hash)} href={`${EXPLORER_URL}/tx/${result.hash}`} />
           <Row label="Paired market" value={selectedMarket ? prettyName(selectedMarket.symbol) : "-"} />
           <Row label="Explorer listing" value={result.registered ? "registered" : "registry not deployed yet"} />
+          {result.strategyVault && (
+            <Row
+              label="Strategy vault"
+              value={truncateAddress(result.strategyVault)}
+              href={`${EXPLORER_URL}/address/${result.strategyVault}`}
+            />
+          )}
         </dl>
         <p className="mt-4 text-sm text-bone/60">
-          You hold the coin&apos;s creator-fee NFT. As it trades, collect your fees any time from the coin&apos;s page.
+          {result.strategyVault
+            ? `Fees now run a ${leverageX}x ${isLong ? "long" : "short"} on ${selectedMarket ? prettyName(selectedMarket.symbol) : "the market"} and buy back + burn the coin.`
+            : "You hold the coin's creator-fee NFT. As it trades, collect your fees any time from the coin's page."}
         </p>
         <button
           onClick={() => {
@@ -157,6 +205,7 @@ export function LaunchForm() {
             setWebsite("");
             setTwitter("");
             setMarketId(null);
+            setStrategyOn(false);
           }}
           className="mt-5 rounded-full bg-wheat px-4 py-1.5 text-xs font-semibold text-soil-950 hover:bg-wheat/90"
         >
@@ -248,12 +297,87 @@ export function LaunchForm() {
           </Field>
         </div>
 
+        {/* Strategy mode */}
+        <div className="rounded-lg border border-bone/10 bg-soil-950/50 p-4">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={strategyOn}
+              onChange={(e) => setStrategyOn(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-wheat"
+            />
+            <span className="text-sm">
+              <span className="font-medium">Run a strategy</span>{" "}
+              <span className="label ml-1 rounded-full bg-wheat/20 px-1.5 py-0.5 text-[0.6rem] text-wheat">Advanced</span>
+              <span className="mt-1 block text-xs leading-relaxed text-bone/55">
+                Instead of collecting fees, the coin&apos;s creator fees run a leveraged perp on{" "}
+                {selectedMarket ? prettyName(selectedMarket.symbol) : "the market"}; profits buy back and burn the coin.
+              </span>
+            </span>
+          </label>
+
+          {strategyOn && (
+            <div className="mt-4 space-y-3 border-t border-bone/10 pt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Direction">
+                  <div className="grid grid-cols-2 gap-1 rounded-lg bg-soil-950 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsLong(true)}
+                      className={`rounded-md py-2 text-sm ${isLong ? "bg-field/20 text-field" : "text-bone/50"}`}
+                    >
+                      Long
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsLong(false)}
+                      className={`rounded-md py-2 text-sm ${!isLong ? "bg-rust/20 text-rust" : "text-bone/50"}`}
+                    >
+                      Short
+                    </button>
+                  </div>
+                </Field>
+                <Field label="Leverage">
+                  <div className="grid grid-cols-3 gap-1 rounded-lg bg-soil-950 p-1">
+                    {LEVERAGE_OPTIONS.map((lv) => (
+                      <button
+                        type="button"
+                        key={lv}
+                        onClick={() => setLeverageX(lv)}
+                        className={`rounded-md py-2 text-sm ${leverageX === lv ? "bg-wheat/20 text-wheat" : "text-bone/50"}`}
+                      >
+                        {lv}x
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+              </div>
+              <p className="rounded-md border border-rust/25 bg-rust/[0.06] px-3 py-2 text-xs leading-relaxed text-rust/90">
+                Trade-off: you give up the creator-fee stream — it funds the strategy. Leverage can be
+                liquidated, so the fees can be lost. Take-profit closes at 2x, with a stop-loss. Prices are
+                simulated for now.
+              </p>
+            </div>
+          )}
+        </div>
+
         <div className="rounded-lg border border-bone/10 bg-soil-950/60 px-4 py-3 text-xs leading-relaxed text-bone/55">
           Fixed 1B supply, liquidity locked in a Uniswap v4 pool.{" "}
-          <span className="text-wheat">Creator fees are on</span>, so you receive the coin&apos;s trading fees and can
-          collect them any time. The coin is themed on{" "}
-          <span className="text-bone/80">{selectedMarket ? prettyName(selectedMarket.symbol) : "the market you pick"}</span>{" "}
-          and shows that market&apos;s live price. It is not funded by that market&apos;s revenue.
+          {strategyOn ? (
+            <>
+              <span className="text-wheat">Strategy mode</span>: creator fees run a {leverageX}x{" "}
+              {isLong ? "long" : "short"} on{" "}
+              <span className="text-bone/80">{selectedMarket ? prettyName(selectedMarket.symbol) : "the market"}</span>{" "}
+              and buy back + burn the coin.
+            </>
+          ) : (
+            <>
+              <span className="text-wheat">Creator fees are on</span>, so you receive the coin&apos;s trading fees and
+              can collect them any time. The coin is themed on{" "}
+              <span className="text-bone/80">{selectedMarket ? prettyName(selectedMarket.symbol) : "the market you pick"}</span>{" "}
+              and shows that market&apos;s live price. It is not funded by that market&apos;s revenue.
+            </>
+          )}
         </div>
 
         {phase === "error" && <p className="text-sm text-rust">{error}</p>}
