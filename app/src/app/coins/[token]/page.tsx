@@ -9,8 +9,9 @@ import { useLaunches } from "@/hooks/use-launches";
 import { useMarkets } from "@/hooks/use-markets";
 import { PriceChart } from "@/components/price-chart";
 import { CoinTradePanel } from "@/components/coin-trade-panel";
+import { CoinAvatar } from "@/components/coin-avatar";
 import { marketCapUsd } from "@/lib/coin-market";
-import { prettyName, marketMeta } from "@/lib/commodities-meta";
+import { prettyName } from "@/lib/commodities-meta";
 import { EXPLORER_URL } from "@/lib/chain";
 import { truncateAddress } from "@/lib/format";
 
@@ -20,7 +21,7 @@ export default function CoinPage() {
   const valid = isAddress(token);
   const addr = token as Address;
 
-  const { name, symbol, stats, loading, ethUsd } = useCoin(valid ? addr : undefined);
+  const { name, symbol, image, website, twitter, stats, loading, ethUsd } = useCoin(valid ? addr : undefined);
   const { items } = useLaunches();
   const { markets } = useMarkets();
 
@@ -39,11 +40,7 @@ export default function CoinPage() {
     <Shell>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex items-center gap-4">
-          {market && (
-            <span className="grid h-14 w-14 place-items-center rounded-xl bg-soil-800 text-3xl">
-              {marketMeta(market.symbol).glyph}
-            </span>
-          )}
+          <CoinAvatar image={image} marketSymbol={market?.symbol} size={58} />
           <div>
             <h1 className="font-display text-3xl font-medium leading-tight">{symbol ?? "…"}</h1>
             <div className="text-sm text-bone/50">
@@ -57,7 +54,13 @@ export default function CoinPage() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          {website && (
+            <a className="text-wheat hover:underline" href={normalizeUrl(website)} target="_blank" rel="noreferrer">website ↗</a>
+          )}
+          {twitter && (
+            <a className="text-wheat hover:underline" href={twitterUrl(twitter)} target="_blank" rel="noreferrer">X ↗</a>
+          )}
           <a className="text-wheat hover:underline" href={`https://pools.trade/t/${addr}`} target="_blank" rel="noreferrer">pools.trade ↗</a>
           <a className="text-wheat hover:underline" href={`${EXPLORER_URL}/address/${addr}`} target="_blank" rel="noreferrer">explorer ↗</a>
         </div>
@@ -127,4 +130,13 @@ function fmtUsd(v: number): string {
   if (v >= 1) return "$" + v.toFixed(2);
   if (v >= 0.01) return "$" + v.toFixed(4);
   return "$" + v.toPrecision(3); // tiny prices → e.g. $2.52e-9
+}
+
+function normalizeUrl(u: string): string {
+  return /^https?:\/\//i.test(u) ? u : `https://${u}`;
+}
+
+function twitterUrl(t: string): string {
+  if (/^https?:\/\//i.test(t)) return t;
+  return `https://x.com/${t.replace(/^@/, "")}`;
 }

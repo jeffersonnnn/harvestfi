@@ -35,6 +35,8 @@ export function LaunchForm() {
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
   const [image, setImage] = useState(""); // ipfs:// URI after upload
+  const [website, setWebsite] = useState("");
+  const [twitter, setTwitter] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
@@ -81,7 +83,12 @@ export function LaunchForm() {
     setError("");
     setResult(null);
     try {
-      const tokenData = encodeTokenData({ name: name.trim(), image: image.trim() || undefined });
+      const tokenData = encodeTokenData({
+        description: name.trim(),
+        image: image.trim() || undefined,
+        website: website.trim() || undefined,
+        twitter: twitter.trim() || undefined,
+      });
       const createTokenData = buildCreateToken(name.trim(), symbol.trim().toUpperCase(), tokenData);
 
       setStep("Predicting token address...");
@@ -147,6 +154,8 @@ export function LaunchForm() {
             setName("");
             setSymbol("");
             setImage("");
+            setWebsite("");
+            setTwitter("");
             setMarketId(null);
           }}
           className="mt-5 rounded-full bg-wheat px-4 py-1.5 text-xs font-semibold text-soil-950 hover:bg-wheat/90"
@@ -220,11 +229,31 @@ export function LaunchForm() {
           </div>
         </Field>
 
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Website (optional)">
+            <input
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              placeholder="https://..."
+              className="w-full rounded-lg border border-bone/15 bg-soil-950 px-3 py-2.5 text-sm outline-none focus:border-wheat/50"
+            />
+          </Field>
+          <Field label="X / Twitter (optional)">
+            <input
+              value={twitter}
+              onChange={(e) => setTwitter(e.target.value)}
+              placeholder="@handle or https://x.com/..."
+              className="w-full rounded-lg border border-bone/15 bg-soil-950 px-3 py-2.5 text-sm outline-none focus:border-wheat/50"
+            />
+          </Field>
+        </div>
+
         <div className="rounded-lg border border-bone/10 bg-soil-950/60 px-4 py-3 text-xs leading-relaxed text-bone/55">
-          Fixed 1B supply, liquidity locked in a Uniswap v4 pool. <span className="text-wheat">Creator fees on</span> -
-          you receive the coin&apos;s trading fees and can collect them any time. The coin is themed on{" "}
-          {selectedMarket ? prettyName(selectedMarket.symbol) : "the market you pick"} and shows its live price; it is
-          not funded by that market&apos;s revenue.
+          Fixed 1B supply, liquidity locked in a Uniswap v4 pool.{" "}
+          <span className="text-wheat">Creator fees are on</span>, so you receive the coin&apos;s trading fees and can
+          collect them any time. The coin is themed on{" "}
+          <span className="text-bone/80">{selectedMarket ? prettyName(selectedMarket.symbol) : "the market you pick"}</span>{" "}
+          and shows that market&apos;s live price. It is not funded by that market&apos;s revenue.
         </div>
 
         {phase === "error" && <p className="text-sm text-rust">{error}</p>}

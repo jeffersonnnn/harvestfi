@@ -45,30 +45,56 @@ export const launchRegistryAbi = parseAbi([
 ]);
 
 export type CoinMeta = {
-  name?: string;
   description?: string;
-  x?: string;
+  website?: string;
   image?: string;
+  twitter?: string;
   telegram?: string;
 };
 
-/** pools.trade display metadata: abi.encode((name, description, x, image, telegram)). */
-export function encodeTokenData(meta: CoinMeta): Hex {
-  return encodeAbiParameters(
-    [
-      {
-        type: "tuple",
-        components: [
-          { type: "string" },
-          { type: "string" },
-          { type: "string" },
-          { type: "string" },
-          { type: "string" },
-        ],
-      },
+// The token's metadata() getter is (string description, string website, string image, bytes extraData).
+// We pack twitter/telegram into extraData in our own format (see decodeSocials).
+const TOKEN_META_TUPLE = [
+  {
+    type: "tuple",
+    components: [
+      { name: "description", type: "string" },
+      { name: "website", type: "string" },
+      { name: "image", type: "string" },
+      { name: "extraData", type: "bytes" },
     ],
-    [[meta.name ?? "", meta.description ?? "", meta.x ?? "", meta.image ?? "", meta.telegram ?? ""]]
-  );
+  },
+] as const;
+
+export function encodeExtraData(twitter?: string, telegram?: string): Hex {
+  if (!twitter && !telegram) return "0x";
+  return encodeAbiParameters([{ type: "string" }, { type: "string" }], [twitter ?? "", telegram ?? ""]);
+}
+
+/** Encodes the token metadata so metadata() returns it correctly (image in slot 3, not extraData). */
+export function encodeTokenData(meta: CoinMeta): Hex {
+  return encodeAbiParameters(TOKEN_META_TUPLE, [
+    {
+      description: meta.description ?? "",
+      website: meta.website ?? "",
+      image: meta.image ?? "",
+      extraData: encodeExtraData(meta.twitter, meta.telegram),
+    },
+  ]);
+}
+
+export const uerc20MetadataAbi = parseAbi([
+  "function metadata() view returns (string description, string website, string image, bytes extraData)",
+]);
+
+export function decodeSocials(extraData?: Hex): { twitter?: string; telegram?: string } {
+  if (!extraData || extraData === "0x") return {};
+  try {
+    const [twitter, telegram] = decodeAbiParameters([{ type: "string" }, { type: "string" }], extraData);
+    return { twitter: twitter || undefined, telegram: telegram || undefined };
+  } catch {
+    return {};
+  }
 }
 
 /** configData = the fee beneficiary address (creator-fee mode). */

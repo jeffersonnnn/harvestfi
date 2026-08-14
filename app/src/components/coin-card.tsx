@@ -5,8 +5,9 @@ import { useAccount, useWriteContract } from "wagmi";
 import { BENEFICIARY_VAULT, beneficiaryVaultAbi } from "@/lib/launchpad";
 import { marketCapUsd } from "@/lib/coin-market";
 import { CHAIN_ID } from "@/lib/chain";
-import { prettyName, marketMeta } from "@/lib/commodities-meta";
+import { prettyName } from "@/lib/commodities-meta";
 import { truncateAddress } from "@/lib/format";
+import { CoinAvatar } from "./coin-avatar";
 import type { LaunchItem } from "@/hooks/use-launches";
 import type { MarketInfo } from "@/hooks/use-markets";
 
@@ -14,20 +15,19 @@ export function CoinCard({ item, market, ethUsd }: { item: LaunchItem; market?: 
   const { address } = useAccount();
   const { writeContract, isPending } = useWriteContract();
   const isCreator = !!address && item.creator.toLowerCase() === address.toLowerCase();
-  const glyph = market ? marketMeta(market.symbol).glyph : "•";
   const mcap = item.priceEth ? marketCapUsd(item.priceEth, ethUsd) : undefined;
 
   return (
     <div className="rounded-xl border border-bone/10 bg-soil-900/40 p-4">
       <Link href={`/coins/${item.token}`} className="block">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
+        <div className="flex items-center gap-3">
+          <CoinAvatar image={item.image} marketSymbol={market?.symbol} size={46} />
+          <div className="min-w-0 flex-1">
             <div className="truncate font-medium hover:text-wheat">{item.symbol ?? "..."}</div>
-            <div className="truncate text-xs text-bone/50">{item.name ?? truncateAddress(item.token)}</div>
+            <div className="truncate text-xs text-bone/50">
+              {market ? `paired to ${prettyName(market.symbol)}` : item.name ?? truncateAddress(item.token)}
+            </div>
           </div>
-          <span className="label shrink-0 rounded-full bg-soil-800 px-2 py-0.5 text-[0.68rem]">
-            {glyph} {market ? prettyName(market.symbol) : `#${item.marketId}`}
-          </span>
         </div>
         <div className="mt-3 flex items-center justify-between text-xs">
           <span className="text-bone/45">Market cap</span>

@@ -11,8 +11,8 @@ export default function LaunchPage() {
         <h1 className="mt-1 font-display text-3xl font-medium tracking-tight">Launchpad</h1>
         <p className="mt-3 text-[1.02rem] leading-relaxed text-bone/65">
           Launch a coin paired to a real commodity market, right here. Fixed 1B supply, liquidity locked in a
-          Uniswap v4 pool, and <span className="text-field">creator fees on</span> so you collect the coin&apos;s
-          trading fees. It shows the market&apos;s live price and lists in the HarvestFi explorer.
+          Uniswap v4 pool, and <span className="text-field">creator fees are on</span>, so you collect the
+          coin&apos;s trading fees. It shows the market&apos;s live price and lists in the HarvestFi explorer.
         </p>
       </div>
 
