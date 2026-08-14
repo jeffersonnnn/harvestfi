@@ -7,7 +7,8 @@
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
     "test": "node --import tsx --test test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "strategy": "tsx src/strategy.ts"
   },
   "dependencies": {
     "viem": "^2.55.0"
