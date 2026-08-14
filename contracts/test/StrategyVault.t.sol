@@ -111,11 +111,25 @@ contract MockRouter {
     }
 }
 
+/// StateView mock: fixed spot price (sqrtPriceX96). Q96 => 1 token per ETH.
+contract MockStateView {
+    uint160 public sqrtP;
+
+    constructor(uint160 s) {
+        sqrtP = s;
+    }
+
+    function getSlot0(bytes32) external view returns (uint160, int24, uint24, uint24) {
+        return (sqrtP, int24(0), uint24(0), uint24(0));
+    }
+}
+
 contract StrategyVaultTest is Test {
     MockERC20 internal token;
     MockPerp internal perp;
     MockBenef internal benef;
     MockRouter internal router;
+    MockStateView internal sv;
     StrategyVault internal vault;
 
     address internal constant DEAD = 0x000000000000000000000000000000000000dEaD;
@@ -125,21 +139,26 @@ contract StrategyVaultTest is Test {
         token = new MockERC20();
         perp = new MockPerp();
         benef = new MockBenef();
-        router = new MockRouter(token, 1000);
+        router = new MockRouter(token, 1); // 1 token-wei per wei ETH
+        sv = new MockStateView(uint160(1 << 96)); // spot = 1 token per ETH
 
         vault = new StrategyVault(
-            address(perp),
-            address(benef),
-            address(router),
-            address(token),
-            1, // nft id
-            0, // marketId
-            true, // long
-            5, // 5x
-            THRESH, // open threshold
-            10000, // take profit = +100% of collateral (2x)
-            5000, // stop loss = -50%
-            2000 // 20% caller bounty
+            StrategyVault.Config({
+                perpEngine: address(perp),
+                beneficiaryVault: address(benef),
+                router: address(router),
+                stateView: address(sv),
+                token: address(token),
+                positionNftId: 1,
+                marketId: 0,
+                isLong: true,
+                leverageX: 5,
+                openThresholdWei: THRESH,
+                takeProfitBps: 10000, // +100% (2x)
+                stopLossBps: 5000, // -50%
+                bountyBps: 2000, // 20% caller bounty
+                maxSlippageBps: 800 // 8%
+            })
         );
         benef.setup(address(vault));
         vm.deal(address(perp), 100 ether); // perp can pay profits
@@ -184,7 +203,7 @@ contract StrategyVaultTest is Test {
         vault.open(0);
         perp.setPnl(1, 0.001 ether); // small profit, below take-profit
         vm.expectRevert("not at target");
-        vault.manage(0, 0);
+        vault.manage(0);
     }
 
     function test_manage_takeProfit_buysAndBurns() public {
@@ -193,14 +212,14 @@ contract StrategyVaultTest is Test {
         perp.setPnl(1, 0.02 ether); // +100% = take-profit hit
 
         uint256 callerBefore = address(this).balance;
-        vault.manage(0, 0);
+        vault.manage(0);
 
         // position closed, payout = 0.04; spend = 80%, bounty = 20%
         assertEq(vault.openPositionId(), 0);
         assertEq(vault.cycles(), 1);
         uint256 spend = (0.04 ether * 8000) / 10000;
-        assertEq(token.balanceOf(DEAD), spend * 1000); // burned
-        assertEq(vault.totalBurned(), spend * 1000);
+        assertEq(token.balanceOf(DEAD), spend); // burned
+        assertEq(vault.totalBurned(), spend);
         assertEq(address(this).balance - callerBefore, 0.04 ether - spend); // bounty
         assertEq(vault.pot(), 0); // fully deployed
     }
@@ -210,11 +229,11 @@ contract StrategyVaultTest is Test {
         vault.open(0);
         perp.setPnl(1, -0.01 ether); // -50% = stop-loss hit
 
-        vault.manage(0, 0);
+        vault.manage(0);
         assertEq(vault.openPositionId(), 0);
         // payout = 0.02 - 0.01 = 0.01; still buys + burns the remainder
         uint256 spend = (0.01 ether * 8000) / 10000;
-        assertEq(token.balanceOf(DEAD), spend * 1000);
+        assertEq(token.balanceOf(DEAD), spend);
         assertEq(vault.cycles(), 1);
     }
 
@@ -223,13 +242,13 @@ contract StrategyVaultTest is Test {
         _harvest(0.02 ether);
         vault.open(0);
         perp.setPnl(1, 0.02 ether);
-        vault.manage(0, 0);
+        vault.manage(0);
         // cycle 2
         _harvest(0.02 ether);
         vault.open(0);
         assertEq(vault.openPositionId(), 2);
         perp.setPnl(2, 0.02 ether);
-        vault.manage(0, 0);
+        vault.manage(0);
         assertEq(vault.cycles(), 2);
         assertGt(vault.totalBurned(), 0);
     }

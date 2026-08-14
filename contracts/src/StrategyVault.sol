@@ -1,6 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+/// @notice Uniswap v4 StateView — current pool price for the on-chain min-out guard.
+interface IStateView {
+    function getSlot0(bytes32 poolId)
+        external
+        view
+        returns (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee);
+}
+
 /// @notice HarvestFi PerpEngine (subset the vault needs).
 interface IPerpEngine {
     struct Position {
@@ -56,6 +66,7 @@ contract StrategyVault {
     IPerpEngine public immutable perpEngine;
     IBeneficiaryVault public immutable beneficiaryVault;
     IUniversalRouter public immutable router;
+    IStateView public immutable stateView;
     address public immutable token; // the launched coin (Uniswap v4 currency1; currency0 = ETH)
     uint256 public immutable positionNftId; // creator-fee NFT id (== pools.trade position id)
     uint256 public immutable marketId; // commodity market this coin trades
@@ -65,6 +76,7 @@ contract StrategyVault {
     uint256 public immutable takeProfitBps; // close in profit at pnl >= collateral * tp / 1e4 (2x = 10000)
     uint256 public immutable stopLossBps; // close to cap loss at pnl <= -collateral * sl / 1e4
     uint16 public immutable bountyBps; // caller bounty on a successful buy-and-burn crank (<= 2000)
+    uint16 public immutable maxSlippageBps; // buy-and-burn slippage cap vs the pool spot (<= 3000)
 
     address internal constant DEAD = 0x000000000000000000000000000000000000dEaD;
     // v4: currency0=ETH(0), currency1=token, fee 2500, tickSpacing 25, no hook (pools.trade graduated pool).
@@ -83,35 +95,48 @@ contract StrategyVault {
     event Closed(uint256 indexed positionId, int256 pnl, uint256 payout);
     event BoughtAndBurned(uint256 ethSpent, uint256 tokenBurned, address indexed caller, uint256 bounty);
 
-    constructor(
-        address perpEngine_,
-        address beneficiaryVault_,
-        address router_,
-        address token_,
-        uint256 positionNftId_,
-        uint256 marketId_,
-        bool isLong_,
-        uint16 leverageX_,
-        uint256 openThresholdWei_,
-        uint256 takeProfitBps_,
-        uint256 stopLossBps_,
-        uint16 bountyBps_
-    ) {
-        require(perpEngine_ != address(0) && beneficiaryVault_ != address(0) && router_ != address(0), "zero");
-        require(token_ != address(0) && leverageX_ >= 1, "bad params");
-        require(bountyBps_ <= 2000 && stopLossBps_ <= 10000 && takeProfitBps_ >= 1, "bad thresholds");
-        perpEngine = IPerpEngine(perpEngine_);
-        beneficiaryVault = IBeneficiaryVault(beneficiaryVault_);
-        router = IUniversalRouter(router_);
-        token = token_;
-        positionNftId = positionNftId_;
-        marketId = marketId_;
-        isLong = isLong_;
-        leverageX = leverageX_;
-        openThresholdWei = openThresholdWei_;
-        takeProfitBps = takeProfitBps_;
-        stopLossBps = stopLossBps_;
-        bountyBps = bountyBps_;
+    struct Config {
+        address perpEngine;
+        address beneficiaryVault;
+        address router;
+        address stateView;
+        address token;
+        uint256 positionNftId;
+        uint256 marketId;
+        bool isLong;
+        uint16 leverageX;
+        uint256 openThresholdWei;
+        uint256 takeProfitBps;
+        uint256 stopLossBps;
+        uint16 bountyBps;
+        uint16 maxSlippageBps;
+    }
+
+    constructor(Config memory c) {
+        require(
+            c.perpEngine != address(0) && c.beneficiaryVault != address(0) && c.router != address(0)
+                && c.stateView != address(0) && c.token != address(0),
+            "zero"
+        );
+        require(c.leverageX >= 1, "bad params");
+        require(
+            c.bountyBps <= 2000 && c.stopLossBps <= 10000 && c.takeProfitBps >= 1 && c.maxSlippageBps <= 3000,
+            "bad thresholds"
+        );
+        perpEngine = IPerpEngine(c.perpEngine);
+        beneficiaryVault = IBeneficiaryVault(c.beneficiaryVault);
+        router = IUniversalRouter(c.router);
+        stateView = IStateView(c.stateView);
+        token = c.token;
+        positionNftId = c.positionNftId;
+        marketId = c.marketId;
+        isLong = c.isLong;
+        leverageX = c.leverageX;
+        openThresholdWei = c.openThresholdWei;
+        takeProfitBps = c.takeProfitBps;
+        stopLossBps = c.stopLossBps;
+        bountyBps = c.bountyBps;
+        maxSlippageBps = c.maxSlippageBps;
     }
 
     receive() external payable {}
@@ -138,8 +163,8 @@ contract StrategyVault {
     }
 
     /// @notice If the open position hit take-profit or stop-loss, close it and buy+burn with the payout.
-    ///         Permissionless; `minOut` guards the buy-and-burn swap.
-    function manage(uint256 maxSlippagePrice, uint128 minOut) external {
+    ///         Permissionless; the buy-and-burn min-out is computed on-chain from the pool spot.
+    function manage(uint256 maxSlippagePrice) external {
         uint256 id = openPositionId;
         require(id != 0, "no position");
         IPerpEngine.Position memory pos = perpEngine.getPosition(id);
@@ -156,17 +181,22 @@ contract StrategyVault {
         uint256 payout = address(this).balance - before;
         emit Closed(id, pnl, payout);
 
-        _buyAndBurn(minOut, msg.sender);
+        _buyAndBurn(msg.sender);
         cycles += 1;
     }
 
     /// @dev Buy the coin on its v4 pool with the whole ETH balance and burn it; pay the caller a bounty.
-    function _buyAndBurn(uint128 minOut, address caller) internal {
+    ///      Min-out is derived from the pool's live spot price (StateView) so a caller cannot force a
+    ///      zero-slippage sandwich.
+    function _buyAndBurn(address caller) internal {
         uint256 potBal = address(this).balance;
         if (potBal == 0) return;
         uint256 bounty = (potBal * bountyBps) / 10000;
         uint256 spend = potBal - bounty;
         if (spend == 0) return;
+
+        uint256 mo = _minOut(spend);
+        uint128 minOut = mo > type(uint128).max ? type(uint128).max : uint128(mo);
 
         bytes[] memory params = new bytes[](3);
         params[0] = abi.encode(
@@ -214,6 +244,21 @@ contract StrategyVault {
 
     function _poolKey() internal view returns (PoolKey memory) {
         return PoolKey(address(0), token, POOL_FEE, POOL_TICK_SPACING, address(0));
+    }
+
+    /// @notice v4 poolId for this coin (ETH/token/2500/25/no-hook).
+    function poolId() public view returns (bytes32) {
+        return keccak256(abi.encode(_poolKey()));
+    }
+
+    /// @dev Expected token-out at the pool's live spot, minus the slippage cap. currency0=ETH,
+    ///      currency1=token, so spot token-per-ETH = (sqrtP / 2^96)^2. Two mulDivs avoid overflow.
+    function _minOut(uint256 ethIn) internal view returns (uint256) {
+        (uint160 sqrtP,,,) = stateView.getSlot0(poolId());
+        uint256 q96 = 1 << 96;
+        uint256 half = Math.mulDiv(ethIn, uint256(sqrtP), q96);
+        uint256 expected = Math.mulDiv(half, uint256(sqrtP), q96);
+        return (expected * (10000 - maxSlippageBps)) / 10000;
     }
 
     // --- views ---
