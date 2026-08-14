@@ -4,7 +4,8 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/header";
 import { NetworkBanner } from "@/components/network-banner";
-import { SimulatedBanner } from "@/components/simulated-banner";
+import { LaunchpadBanner } from "@/components/launchpad-banner";
+// import { SimulatedBanner } from "@/components/simulated-banner";
 import { BRAND } from "@/lib/brand";
 
 const display = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap" });
@@ -46,7 +47,8 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <Providers>
-          <SimulatedBanner />
+          {/* <SimulatedBanner /> */}
+          <LaunchpadBanner />
           <Header />
           <NetworkBanner />
           <main className="flex-1">{children}</main>

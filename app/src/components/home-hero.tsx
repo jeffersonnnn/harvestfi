@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useMarkets } from "@/hooks/use-markets";
 import { ConnectButton } from "./connect-button";
+import { LaunchpadDropdown } from "./launchpad-nav";
 import { BRAND } from "@/lib/brand";
 import { IS_TESTNET } from "@/lib/chain";
 
@@ -14,10 +15,19 @@ const HERO_POSTER = "/hero-poster.jpg";
 
 const NAV = [
   { href: "/markets", label: "Markets" },
+  { href: "/demo", label: "Demo" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/pool", label: "Pool" },
   { href: "/licenses", label: "Licenses" },
   { href: "/how-it-works", label: "How it works" },
+];
+
+// Mobile menu is a flat list, so it spells the launchpad out (no dropdown on touch).
+const MOBILE_NAV = [
+  ...NAV.slice(0, 5),
+  { href: "/launch", label: "Launch a token" },
+  { href: "/coins", label: "Explorer" },
+  ...NAV.slice(5),
 ];
 
 const EASE = "cubic-bezier(0.76,0,0.24,1)";
@@ -129,6 +139,7 @@ export function HomeHero() {
                   {n.label}
                 </Link>
               ))}
+              <LaunchpadDropdown tone="hero" />
             </div>
           </div>
 
@@ -176,8 +187,15 @@ export function HomeHero() {
 
           <div className="mt-7 flex flex-col items-center gap-4 sm:flex-row md:mt-8">
             <Link
+              href="/demo"
+              className="group flex items-center gap-2 rounded-full bg-wheat px-7 py-3 text-sm font-medium text-soil-950 transition-colors hover:bg-wheat/90"
+            >
+              Try the demo
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+            <Link
               href="/markets"
-              className="group flex items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-medium text-soil-950 transition-colors hover:bg-white/90"
+              className="group flex items-center gap-2 rounded-full border border-white/40 px-7 py-3 text-sm font-medium text-white transition-colors hover:border-white/60 hover:bg-white/10"
             >
               Enter the markets
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -248,7 +266,7 @@ export function HomeHero() {
 
           {/* Links */}
           <div className="flex flex-1 flex-col justify-center px-6">
-            {NAV.map((n, i) => (
+            {MOBILE_NAV.map((n, i) => (
               <div
                 key={n.href}
                 style={{

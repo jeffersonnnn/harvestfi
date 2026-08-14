@@ -6,9 +6,11 @@ import { ConnectButton } from "./connect-button";
 import { AddNetworkButton } from "./add-network-button";
 import { IS_TESTNET } from "@/lib/chain";
 import { BRAND } from "@/lib/brand";
+import { LaunchpadDropdown } from "./launchpad-nav";
 
 const NAV = [
   { href: "/markets", label: "Markets" },
+  { href: "/demo", label: "Demo" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/pool", label: "Pool" },
   { href: "/licenses", label: "Licenses" },
@@ -37,24 +39,13 @@ export function Header() {
             )}
           </Link>
           <nav className="hidden items-center gap-1 sm:flex">
-            {NAV.map((n) => {
-              const active =
-                n.href === "/markets"
-                  ? pathname.startsWith("/markets") || pathname.startsWith("/trade")
-                  : pathname.startsWith(n.href);
-              return (
-                <Link
-                  key={n.href}
-                  href={n.href}
-                  className={
-                    "rounded-md px-3 py-1.5 text-sm transition-colors " +
-                    (active ? "text-bone" : "text-bone/50 hover:text-bone/80")
-                  }
-                >
-                  {n.label}
-                </Link>
-              );
-            })}
+            {NAV.slice(0, 5).map((n) => (
+              <NavLink key={n.href} href={n.href} label={n.label} pathname={pathname} />
+            ))}
+            <LaunchpadDropdown />
+            {NAV.slice(5).map((n) => (
+              <NavLink key={n.href} href={n.href} label={n.label} pathname={pathname} />
+            ))}
           </nav>
         </div>
         <div className="flex items-center gap-2">
@@ -63,5 +54,23 @@ export function Header() {
         </div>
       </div>
     </header>
+  );
+}
+
+function NavLink({ href, label, pathname }: { href: string; label: string; pathname: string }) {
+  const active =
+    href === "/markets"
+      ? pathname.startsWith("/markets") || pathname.startsWith("/trade")
+      : pathname.startsWith(href);
+  return (
+    <Link
+      href={href}
+      className={
+        "rounded-md px-3 py-1.5 text-sm transition-colors " +
+        (active ? "text-bone" : "text-bone/50 hover:text-bone/80")
+      }
+    >
+      {label}
+    </Link>
   );
 }
