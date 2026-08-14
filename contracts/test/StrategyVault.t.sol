@@ -32,7 +32,7 @@ contract MockPerp {
 
     mapping(uint256 => P) public pos;
     mapping(uint256 => int256) public pnl;
-    uint256 public nextId = 1;
+    uint256 public nextId = 0;
 
     function openPosition(uint256, bool, uint16, uint256) external payable returns (uint256 id) {
         id = nextId++;
@@ -179,7 +179,7 @@ contract StrategyVaultTest is Test {
     function test_open_movesCollateralToPerp() public {
         _harvest(0.02 ether);
         vault.open(0);
-        assertEq(vault.openPositionId(), 1);
+        assertTrue(vault.positionOpen());
         assertEq(vault.pot(), 0); // collateral moved to the perp
         assertEq(address(perp).balance, 100 ether + 0.02 ether);
     }
@@ -201,7 +201,7 @@ contract StrategyVaultTest is Test {
     function test_revert_manage_notAtTarget() public {
         _harvest(0.02 ether);
         vault.open(0);
-        perp.setPnl(1, 0.001 ether); // small profit, below take-profit
+        perp.setPnl(0, 0.001 ether); // small profit, below take-profit
         vm.expectRevert("not at target");
         vault.manage(0);
     }
@@ -209,13 +209,13 @@ contract StrategyVaultTest is Test {
     function test_manage_takeProfit_buysAndBurns() public {
         _harvest(0.02 ether);
         vault.open(0);
-        perp.setPnl(1, 0.02 ether); // +100% = take-profit hit
+        perp.setPnl(0, 0.02 ether); // +100% = take-profit hit
 
         uint256 callerBefore = address(this).balance;
         vault.manage(0);
 
         // position closed, payout = 0.04; spend = 80%, bounty = 20%
-        assertEq(vault.openPositionId(), 0);
+        assertFalse(vault.positionOpen());
         assertEq(vault.cycles(), 1);
         uint256 spend = (0.04 ether * 8000) / 10000;
         assertEq(token.balanceOf(DEAD), spend); // burned
@@ -227,10 +227,10 @@ contract StrategyVaultTest is Test {
     function test_manage_stopLoss_closesAndBurns() public {
         _harvest(0.02 ether);
         vault.open(0);
-        perp.setPnl(1, -0.01 ether); // -50% = stop-loss hit
+        perp.setPnl(0, -0.01 ether); // -50% = stop-loss hit
 
         vault.manage(0);
-        assertEq(vault.openPositionId(), 0);
+        assertFalse(vault.positionOpen());
         // payout = 0.02 - 0.01 = 0.01; still buys + burns the remainder
         uint256 spend = (0.01 ether * 8000) / 10000;
         assertEq(token.balanceOf(DEAD), spend);
@@ -241,13 +241,13 @@ contract StrategyVaultTest is Test {
         // cycle 1
         _harvest(0.02 ether);
         vault.open(0);
-        perp.setPnl(1, 0.02 ether);
+        perp.setPnl(0, 0.02 ether);
         vault.manage(0);
         // cycle 2
         _harvest(0.02 ether);
         vault.open(0);
-        assertEq(vault.openPositionId(), 2);
-        perp.setPnl(2, 0.02 ether);
+        assertEq(vault.openPositionId(), 1);
+        perp.setPnl(1, 0.02 ether);
         vault.manage(0);
         assertEq(vault.cycles(), 2);
         assertGt(vault.totalBurned(), 0);

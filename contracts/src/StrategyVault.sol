@@ -86,7 +86,8 @@ contract StrategyVault {
     bytes internal constant ACTIONS = hex"060c0f"; // SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL
 
     // --- state ---
-    uint256 public openPositionId; // 0 = no open position
+    uint256 public openPositionId; // perp position id (id 0 is valid; use positionOpen as the flag)
+    bool public positionOpen; // true while a perp position is open (PerpEngine ids start at 0)
     uint256 public totalBurned; // cumulative coin burned
     uint256 public cycles; // completed open->close->burn cycles
 
@@ -155,18 +156,19 @@ contract StrategyVault {
 
     /// @notice Open the leveraged position once the pot is large enough and none is open. Permissionless.
     function open(uint256 maxSlippagePrice) external {
-        require(openPositionId == 0, "position open");
+        require(!positionOpen, "position open");
         uint256 collateral = address(this).balance;
         require(collateral >= openThresholdWei, "below threshold");
         openPositionId = perpEngine.openPosition{value: collateral}(marketId, isLong, leverageX, maxSlippagePrice);
+        positionOpen = true;
         emit Opened(openPositionId, collateral);
     }
 
     /// @notice If the open position hit take-profit or stop-loss, close it and buy+burn with the payout.
     ///         Permissionless; the buy-and-burn min-out is computed on-chain from the pool spot.
     function manage(uint256 maxSlippagePrice) external {
+        require(positionOpen, "no position");
         uint256 id = openPositionId;
-        require(id != 0, "no position");
         IPerpEngine.Position memory pos = perpEngine.getPosition(id);
         int256 pnl = perpEngine.unrealizedPnl(id);
         int256 tp = int256((pos.collateral * takeProfitBps) / 10000);
@@ -177,7 +179,7 @@ contract StrategyVault {
         perpEngine.closePosition(id, maxSlippagePrice);
         // payout is pushed to this vault; if the push failed it sits in owed -> withdraw it.
         try perpEngine.withdraw() {} catch {}
-        openPositionId = 0;
+        positionOpen = false;
         uint256 payout = address(this).balance - before;
         emit Closed(id, pnl, payout);
 
@@ -267,6 +269,6 @@ contract StrategyVault {
     }
 
     function currentPnl() external view returns (int256) {
-        return openPositionId == 0 ? int256(0) : perpEngine.unrealizedPnl(openPositionId);
+        return positionOpen ? perpEngine.unrealizedPnl(openPositionId) : int256(0);
     }
 }

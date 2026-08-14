@@ -34,7 +34,7 @@ export function StrategyPanel({
       ? ([
           { address: vault, abi: strategyVaultAbi, functionName: "isLong" },
           { address: vault, abi: strategyVaultAbi, functionName: "leverageX" },
-          { address: vault, abi: strategyVaultAbi, functionName: "openPositionId" },
+          { address: vault, abi: strategyVaultAbi, functionName: "positionOpen" },
           { address: vault, abi: strategyVaultAbi, functionName: "currentPnl" },
           { address: vault, abi: strategyVaultAbi, functionName: "totalBurned" },
           { address: vault, abi: strategyVaultAbi, functionName: "pot" },
@@ -48,12 +48,11 @@ export function StrategyPanel({
 
   const isLong = data[0].result as boolean;
   const leverageX = Number(data[1]?.result ?? 0);
-  const openPositionId = (data[2]?.result as bigint | undefined) ?? 0n;
+  const open = (data[2]?.result as boolean | undefined) ?? false;
   const pnl = (data[3]?.result as bigint | undefined) ?? 0n;
   const burned = (data[4]?.result as bigint | undefined) ?? 0n;
   const pot = (data[5]?.result as bigint | undefined) ?? 0n;
   const cycles = Number(data[6]?.result ?? 0);
-  const open = openPositionId !== 0n;
   const pnlEth = Number(formatEther(pnl < 0n ? -pnl : pnl)) * (pnl < 0n ? -1 : 1);
 
   return (
