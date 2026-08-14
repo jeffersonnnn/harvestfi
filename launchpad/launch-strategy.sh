@@ -34,18 +34,10 @@ WALLET=$(cast wallet address --private-key "$PRIVATE_KEY")
 echo "wallet=$WALLET  name='$NAME'  $SYMBOL  market=$MARKET  ${DIRECTION} ${LEVERAGE}x  dryRun=$DRY_RUN"
 
 # minimal tokenData: metadata() = (description, website, image, bytes extraData). Description = name.
-NAME_HEX=$(cast from-utf8 "$NAME"); NLEN=$(( ${#NAME} ))
-# build via cast abi-encode of the 4-field tuple (description, website, image, extraData)
-TOKENDATA=$(cast abi-encode "f((string,string,string,bytes))" "($NAME,,,0x)" 2>/dev/null || echo "")
-if [ -z "$TOKENDATA" ]; then
-  # cast can't encode empty tuple strings; fall back to a hand-built (name,"","",0x) blob
-  Z=0000000000000000000000000000000000000000000000000000000000000000
-  PAD=$(( (NLEN + 31) / 32 * 32 ))
-  NAME_PADDED=$(printf '%s' "$NAME_HEX" | sed 's/^0x//'); while [ ${#NAME_PADDED} -lt $((PAD*2)) ]; do NAME_PADDED="${NAME_PADDED}0"; done
-  LENHEX=$(printf '%064x' "$NLEN")
-  # offsets: tuple(0x20) then desc@0x80, website@..., image@..., extra@...
-  TOKENDATA="0x${Z:0:62}20${Z:0:62}80$(printf '%064x' $((0xa0+PAD)))$(printf '%064x' $((0xc0+PAD)))$(printf '%064x' $((0xe0+PAD)))${LENHEX}${NAME_PADDED}${Z}${Z}${Z}"
-fi
+# tokenData = abi.encode((description, website, image, bytes extraData)) all empty - deterministic and
+# robust (the ERC20 name/symbol are set separately in createToken). Metadata can be edited later.
+Z=0000000000000000000000000000000000000000000000000000000000000000
+TOKENDATA="0x${Z:0:62}20${Z:0:62}80${Z:0:62}a0${Z:0:62}c0${Z:0:62}e0${Z}${Z}${Z}${Z}"
 
 CREATE_CD=$(cast calldata "createToken(address,string,string,uint8,uint128,address,bytes)" \
   "$FACTORY" "$NAME" "$SYMBOL" 18 "$SUPPLY" "$LAUNCHER" "$TOKENDATA")
