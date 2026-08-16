@@ -21,8 +21,35 @@ keeper/dist/
 **/.dev.vars
 **/.dev.vars.*
 
+# Generated /brag videos + composition scaffolds (large, regenerable)
+brag-output/
+brag-output-*/
+prediction markets/
+
+# Cloudflare Worker local dev state (miniflare cache / sqlite)
+**/.wrangler/
+
+# Cloudflare / Wrangler generated types
+**/worker-configuration.d.ts
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+**/.turbo/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Extra secret-file safety net (never commit raw keys/certs)
+*.pem
+*.key
+*.keystore
+
 # Editor / OS cruft
 .DS_Store
+**/.DS_Store
+Thumbs.db
 *.log
 coverage/
 .vercel
