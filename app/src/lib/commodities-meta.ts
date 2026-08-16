@@ -1,9 +1,13 @@
 // Front-end grouping + flavor for the 23 agricultural markets (all "Agricultural" on-chain).
-export type Group = "Grains" | "Oilseeds" | "Softs" | "Dairy" | "Materials" | "Industrial";
+export type Group = "Index" | "Grains" | "Oilseeds" | "Softs" | "Dairy" | "Materials" | "Industrial" | "Energy";
 
-export const GROUPS: Group[] = ["Grains", "Oilseeds", "Softs", "Dairy", "Materials", "Industrial"];
+export const GROUPS: Group[] = ["Index", "Grains", "Oilseeds", "Softs", "Dairy", "Materials", "Industrial", "Energy"];
 
 const META: Record<string, { group: Group; glyph: string }> = {
+  // Synthetic basket indexes (equal-weight, rebased to 100) - listed first as the headline markets.
+  ENERGY_INDEX: { group: "Index", glyph: "📊" },
+  METALS_INDEX: { group: "Index", glyph: "📈" },
+  GRAIN_INDEX: { group: "Index", glyph: "🧺" },
   CORN: { group: "Grains", glyph: "🌽" },
   WHEAT: { group: "Grains", glyph: "🌾" },
   RICE: { group: "Grains", glyph: "🍚" },
@@ -55,6 +59,23 @@ const META: Record<string, { group: Group; glyph: string }> = {
   GERMANIUM: { group: "Industrial", glyph: "🔬" },
   GALLIUM: { group: "Industrial", glyph: "🧪" },
   PALLADIUM: { group: "Industrial", glyph: "⚪" },
+  CRUDE_OIL: { group: "Energy", glyph: "🛢️" },
+  BRENT_CRUDE: { group: "Energy", glyph: "🛢️" },
+  NATURAL_GAS: { group: "Energy", glyph: "🔥" },
+  GASOLINE: { group: "Energy", glyph: "⛽" },
+  HEATING_OIL: { group: "Energy", glyph: "🌡️" },
+  GASOIL: { group: "Energy", glyph: "🚛" },
+  TTF_GAS: { group: "Energy", glyph: "🔥" },
+  UK_GAS: { group: "Energy", glyph: "🔥" },
+  ETHANOL: { group: "Energy", glyph: "🌽" },
+  NAPHTHA: { group: "Energy", glyph: "⚗️" },
+  PROPANE: { group: "Energy", glyph: "🫧" },
+  CARBON_EU: { group: "Energy", glyph: "🌍" },
+  LNG_JKM: { group: "Energy", glyph: "🚢" },
+  METHANOL: { group: "Energy", glyph: "🧪" },
+  POWER_DE: { group: "Energy", glyph: "⚡" },
+  POWER_FR: { group: "Energy", glyph: "⚡" },
+  BITUMEN: { group: "Energy", glyph: "🖤" },
 };
 
 export function marketMeta(symbol: string): { group: Group; glyph: string } {

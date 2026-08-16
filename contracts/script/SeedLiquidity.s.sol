@@ -29,10 +29,13 @@ contract SeedLiquidity is Script {
         uint256 maxM = vm.envOr("MAX_MARKETS", uint256(0));
         uint256 count = pm.marketCount();
         if (maxM == 0 || maxM > count) maxM = count;
+        // Start offset (default 0): seeds markets [MIN_MARKET, maxM). Lets you fund only a freshly-created
+        // block (e.g. energy prediction markets at ids 68+) without re-betting the ones already seeded.
+        uint256 minM = vm.envOr("MIN_MARKET", uint256(0));
 
         vm.startBroadcast();
         uint256 seeded;
-        for (uint256 i = 0; i < maxM; i++) {
+        for (uint256 i = minM; i < maxM; i++) {
             PredictionMarket.Market memory m = pm.getMarket(i);
             // Only open markets still accepting bets.
             if (m.status != PredictionMarket.Status.Open || m.expiry <= block.timestamp) continue;

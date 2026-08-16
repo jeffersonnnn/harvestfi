@@ -20,6 +20,7 @@ export interface CommoditySpec {
     teSlug: string; // Trading Economics /commodity/<slug>
     currency: string; // ACTUAL TE quote currency: "USD" | "USd" (cents) | "EUR" | "CAD" | "INR" | ...
     unit: string; // display only
+    synthetic?: boolean; // SYNTHETIC index market: NOT fetched from a source; DERIVED from leaves. See indexes.ts.
 }
 
 // All 23 TE agricultural markets. USd = US cents. FX-quoted ones flagged.
@@ -80,6 +81,31 @@ export const COMMODITIES: CommoditySpec[] = [
     {id: 48n, symbol: "GERMANIUM", teSlug: "germanium", currency: "USD", unit: "Kg"},
     {id: 49n, symbol: "GALLIUM", teSlug: "gallium", currency: "USD", unit: "Kg"},
     {id: 50n, symbol: "PALLADIUM", teSlug: "palladium", currency: "USD", unit: "Oz"},
+    // --- Energy (17) - oil/gas/fuels/power/carbon. All quoted "USD" for the demo (simulated anchors are
+    // rough USD-equivalents; the 5 with USD-futures also carry a Yahoo ticker for the real source). ---
+    {id: 51n, symbol: "CRUDE_OIL", teSlug: "crude-oil", currency: "USD", unit: "Bbl"},
+    {id: 52n, symbol: "BRENT_CRUDE", teSlug: "brent-crude-oil", currency: "USD", unit: "Bbl"},
+    {id: 53n, symbol: "NATURAL_GAS", teSlug: "natural-gas", currency: "USD", unit: "MMBtu"},
+    {id: 54n, symbol: "GASOLINE", teSlug: "gasoline", currency: "USD", unit: "Gal"},
+    {id: 55n, symbol: "HEATING_OIL", teSlug: "heating-oil", currency: "USD", unit: "Gal"},
+    {id: 56n, symbol: "GASOIL", teSlug: "gasoil", currency: "USD", unit: "T"},
+    {id: 57n, symbol: "TTF_GAS", teSlug: "eu-natural-gas", currency: "USD", unit: "MWh"},
+    {id: 58n, symbol: "UK_GAS", teSlug: "uk-natural-gas", currency: "USD", unit: "thm"},
+    {id: 59n, symbol: "ETHANOL", teSlug: "ethanol", currency: "USD", unit: "Gal"},
+    {id: 60n, symbol: "NAPHTHA", teSlug: "naphtha", currency: "USD", unit: "T"},
+    {id: 61n, symbol: "PROPANE", teSlug: "propane", currency: "USD", unit: "Gal"},
+    {id: 62n, symbol: "CARBON_EU", teSlug: "carbon", currency: "USD", unit: "T"},
+    {id: 63n, symbol: "LNG_JKM", teSlug: "lng-japan-korea-marker", currency: "USD", unit: "MMBtu"},
+    {id: 64n, symbol: "METHANOL", teSlug: "methanol", currency: "USD", unit: "T"},
+    {id: 65n, symbol: "POWER_DE", teSlug: "germany-electricity-price", currency: "USD", unit: "MWh"},
+    {id: 66n, symbol: "POWER_FR", teSlug: "france-electricity-price", currency: "USD", unit: "MWh"},
+    {id: 67n, symbol: "BITUMEN", teSlug: "bitumen", currency: "USD", unit: "T"},
+    // --- Synthetic INDEX markets (3) - DERIVED from the leaves above, not fetched. See indexes.ts.
+    // `teSlug` is empty and `currency` is nominal: these rows are filtered out before the source fetch;
+    // their price is computed from constituent leaf prices and posted directly (bypasses normalize). ---
+    {id: 68n, symbol: "ENERGY_INDEX", teSlug: "", currency: "USD", unit: "idx", synthetic: true},
+    {id: 69n, symbol: "METALS_INDEX", teSlug: "", currency: "USD", unit: "idx", synthetic: true},
+    {id: 70n, symbol: "GRAIN_INDEX", teSlug: "", currency: "USD", unit: "idx", synthetic: true},
 ];
 
 export const COMMODITIES_BY_SYMBOL: Record<string, CommoditySpec> = Object.fromEntries(

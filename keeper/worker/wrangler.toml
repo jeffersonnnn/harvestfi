@@ -31,7 +31,7 @@ DRY_RUN = "false"  # live: sign + post on-chain.
 # 51 = post all markets each tick WITHOUT the on-chain getPrice multicall read (batch/no-read path in
 # tick.ts). Fewer RPC calls per tick = fewer chances to hit the shared public-RPC rate limit. (Was "0",
 # which read every market's on-chain ts first.)
-POST_BATCH_LIMIT = "51"
+POST_BATCH_LIMIT = "25"
 # TESTNET rollback (46630): RPC https://rpc.testnet.chain.robinhood.com,
 #   ORACLE 0xd3Fa9008eC7511f3d32A1760C3Ea52c58111f140, REGISTRY 0xFc7e57695D3b44393Ed007e45527e1eaB9Df58D6
 

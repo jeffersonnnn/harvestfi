@@ -72,6 +72,13 @@ const SIM: Record<string, SimSpec> = {
     URANIUM: {price: 85, vol: 0.1}, COAL: {price: 130, vol: 0.12}, COKING_COAL: {price: 240, vol: 0.14},
     NEODYMIUM: {price: 70, vol: 0.15}, GERMANIUM: {price: 2000, vol: 0.15}, GALLIUM: {price: 600, vol: 0.15},
     PALLADIUM: {price: 1000, vol: 0.1},
+    // Energy (USD/unit) - oil & fuels calmer, gas/power/carbon jumpier
+    CRUDE_OIL: {price: 78, vol: 0.08}, BRENT_CRUDE: {price: 82, vol: 0.08}, NATURAL_GAS: {price: 2.9, vol: 0.18},
+    GASOLINE: {price: 2.35, vol: 0.1}, HEATING_OIL: {price: 2.5, vol: 0.1}, GASOIL: {price: 720, vol: 0.09},
+    TTF_GAS: {price: 34, vol: 0.2}, UK_GAS: {price: 1.0, vol: 0.2}, ETHANOL: {price: 1.7, vol: 0.1},
+    NAPHTHA: {price: 620, vol: 0.1}, PROPANE: {price: 0.75, vol: 0.12}, CARBON_EU: {price: 72, vol: 0.12},
+    LNG_JKM: {price: 13, vol: 0.2}, METHANOL: {price: 320, vol: 0.1}, POWER_DE: {price: 90, vol: 0.22},
+    POWER_FR: {price: 85, vol: 0.22}, BITUMEN: {price: 400, vol: 0.12},
 };
 
 function simSeed(sym: string): number {
@@ -281,6 +288,9 @@ const YAHOO_SYMBOLS: Record<string, string> = {
     PLATINUM: "PL=F",
     CRUDE_OIL: "CL=F",
     NATURAL_GAS: "NG=F",
+    BRENT_CRUDE: "BZ=F",
+    GASOLINE: "RB=F",
+    HEATING_OIL: "HO=F",
     CORN: "ZC=F",
     WHEAT: "ZW=F",
     RICE: "ZR=F",

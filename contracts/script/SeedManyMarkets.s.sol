@@ -35,13 +35,16 @@ contract SeedManyMarkets is Script {
         // board size (the first ids are the flagship grains/softs). Default 20 keeps it curated.
         uint256 maxC = vm.envOr("MAX_COMMODITIES", uint256(20));
         if (maxC == 0 || maxC > count) maxC = count;
+        // Optional start offset: only consider commodity ids [MIN_COMMODITY, maxC). Default 0. Lets you
+        // seed a newly-appended block (e.g. energy at ids 51-67) without duplicating existing markets.
+        uint256 minC = vm.envOr("MIN_COMMODITY", uint256(0));
         uint64 maxAge = oracle.maxPriceAge();
         uint64 t = uint64(block.timestamp);
 
         vm.startBroadcast();
         uint256 created;
         uint256 skipped;
-        for (uint256 i = 0; i < maxC; i++) {
+        for (uint256 i = minC; i < maxC; i++) {
             if (!registry.isListed(i)) {
                 skipped++;
                 continue;

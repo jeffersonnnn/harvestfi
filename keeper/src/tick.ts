@@ -7,6 +7,7 @@ import {fetchFxRates} from "./fx.js";
 import {selectSource} from "./sources.js";
 import {signPrice} from "./sign.js";
 import {discoverMarkets} from "./markets.js";
+import {INDEXES_BY_SYMBOL, deriveIndexE8} from "./indexes.js";
 
 /// The keeper's core work, factored out so BOTH the Node long-running loop (index.ts) and the
 /// Cloudflare Worker (worker/worker.ts, one tick per cron fire) call the same code path.
@@ -18,32 +19,51 @@ interface Update {
     ts: bigint;
 }
 
-// Round-robin cursor for batched (CPU-limited) posting.
-let _rr = 0;
-
 /// Build the normalized, timestamped price updates for this tick.
 async function buildUpdates(nowSec: bigint): Promise<Update[]> {
     const source = selectSource();
     // Discover the active market set from the registry each tick, so markets added on-chain are
     // picked up automatically (no restart, no code change). Falls back to the static catalog offline.
     const markets = await discoverMarkets(config.registryAddress);
-    const raw = await source.fetchPrices(markets);
+    // Synthetic index markets are NOT fetched: they are derived from the leaf prices below. Fetch only
+    // the real leaves so the source never sees an index symbol it cannot price.
+    const leaves = markets.filter((c) => !c.synthetic);
+    const indexMarkets = markets.filter((c) => c.synthetic);
+    const raw = await source.fetchPrices(leaves);
 
-    const currencies = markets.map((c) => c.currency);
+    const currencies = leaves.map((c) => c.currency);
     const fx = await fetchFxRates(currencies);
 
     const updates: Update[] = [];
-    for (const c of markets) {
+    const leafE8 = new Map<string, bigint>(); // symbol -> normalized 1e8 price, for index derivation
+    for (const c of leaves) {
         const r = raw.get(c.symbol);
         if (r === undefined) {
             console.warn(`[keeper] no quote for ${c.symbol} (id ${c.id}) - skipping`);
             continue;
         }
         try {
-            updates.push({id: c.id, symbol: c.symbol, priceE8: normalizeToE8(r, c.currency, fx), ts: nowSec});
+            const priceE8 = normalizeToE8(r, c.currency, fx);
+            updates.push({id: c.id, symbol: c.symbol, priceE8, ts: nowSec});
+            leafE8.set(c.symbol, priceE8);
         } catch (e) {
             console.warn(`[keeper] normalize failed for ${c.symbol}: ${(e as Error).message}`);
         }
+    }
+
+    // Derive each synthetic index from this tick's leaf prices and post it like any other market.
+    for (const c of indexMarkets) {
+        const def = INDEXES_BY_SYMBOL[c.symbol];
+        if (!def) {
+            console.warn(`[keeper] synthetic market ${c.symbol} (id ${c.id}) has no index def - skipping`);
+            continue;
+        }
+        const priceE8 = deriveIndexE8(def, leafE8);
+        if (priceE8 === null) {
+            console.warn(`[keeper] index ${c.symbol} (id ${c.id}) - too few constituents priced, skipping`);
+            continue;
+        }
+        updates.push({id: c.id, symbol: c.symbol, priceE8, ts: nowSec});
     }
     return updates;
 }
@@ -77,56 +97,60 @@ export async function runOnce(): Promise<void> {
         return;
     }
 
-    const ids: bigint[] = [];
-    const prices: bigint[] = [];
-    const timestamps: bigint[] = [];
-    const signatures: Hex[] = [];
-
-    let toPost: Update[];
-    if (config.postBatchLimit > 0) {
-        // CPU-limited host (e.g. Cloudflare Workers free): post the next N markets round-robin, with
-        // NO on-chain reads - nowSec is always ahead of each market's last post (it cycles every few
-        // ticks), so the strictly-increasing-ts rule holds without checking. Minimal CPU per tick.
-        const n = Math.min(config.postBatchLimit, updates.length);
-        toPost = [];
-        for (let k = 0; k < n; k++) toPost.push(updates[(_rr + k) % updates.length]);
-        _rr = (_rr + n) % updates.length;
-    } else {
-        // Unmetered host: read every on-chain ts in one multicall, post everything strictly ahead.
-        const onchain = await publicClient.multicall({
-            allowFailure: true,
-            contracts: updates.map((u) => ({
-                address: config.oracleAddress,
-                abi: pushPriceOracleAbi,
-                functionName: "getPrice",
-                args: [u.id],
-            })),
-        });
-        toPost = updates.filter((u, i) => {
-            const r = onchain[i];
-            const onchainTs = r.status === "success" ? (r.result as unknown as readonly [bigint, bigint])[1] : 0n;
-            return u.ts > onchainTs;
-        });
-    }
-
-    for (const u of toPost) {
-        const sig = await signPrice(account, config.chainId, config.oracleAddress, u.id, u.priceE8, u.ts);
-        ids.push(u.id);
-        prices.push(u.priceE8);
-        timestamps.push(u.ts);
-        signatures.push(sig);
-    }
-
-    if (ids.length === 0) {
+    // Freshness filter: read each market's on-chain ts (ONE multicall) and skip any where our ts is not
+    // strictly newer (the oracle rejects non-increasing ts). Cheap and safe on the stateless Worker.
+    const onchain = await publicClient.multicall({
+        allowFailure: true,
+        contracts: updates.map((u) => ({
+            address: config.oracleAddress,
+            abi: pushPriceOracleAbi,
+            functionName: "getPrice",
+            args: [u.id],
+        })),
+    });
+    const fresh = updates.filter((u, i) => {
+        const r = onchain[i];
+        const onchainTs = r.status === "success" ? (r.result as unknown as readonly [bigint, bigint])[1] : 0n;
+        return u.ts > onchainTs;
+    });
+    if (fresh.length === 0) {
         console.log("[keeper] nothing fresh to post this tick");
         return;
     }
 
-    const hash = await walletClient.writeContract({
-        address: config.oracleAddress,
-        abi: pushPriceOracleAbi,
-        functionName: "postPrices",
-        args: [ids, prices, timestamps, signatures],
-    });
-    console.log(`[keeper] posted ${ids.length} price(s): ${hash}`);
+    // Post in CHUNKS. Two reasons, both learned the hard way at 68 markets on the shared public RPC:
+    //   1. A single large postPrices batch makes eth_estimateGas FAIL on that RPC, so we split into
+    //      small txs AND pass an explicit `gas` limit to skip gas estimation entirely.
+    //   2. Cloudflare runs the Worker STATELESS (a fresh isolate per cron fire), so the old round-robin
+    //      cursor never advanced and tail markets never posted. Chunking posts EVERY market each tick.
+    // POST_BATCH_LIMIT now means "max markets per tx" (0 = one tx for all). The block gas limit is huge
+    // (Arbitrum Orbit), so the explicit cap below is never the binding constraint.
+    const chunkSize = config.postBatchLimit > 0 ? config.postBatchLimit : fresh.length;
+    let nonce = await publicClient.getTransactionCount({address: account.address, blockTag: "pending"});
+    let posted = 0;
+    for (let start = 0; start < fresh.length; start += chunkSize) {
+        const group = fresh.slice(start, start + chunkSize);
+        const ids: bigint[] = [];
+        const prices: bigint[] = [];
+        const timestamps: bigint[] = [];
+        const signatures: Hex[] = [];
+        for (const u of group) {
+            const sig = await signPrice(account, config.chainId, config.oracleAddress, u.id, u.priceE8, u.ts);
+            ids.push(u.id);
+            prices.push(u.priceE8);
+            timestamps.push(u.ts);
+            signatures.push(sig);
+        }
+        const hash = await walletClient.writeContract({
+            address: config.oracleAddress,
+            abi: pushPriceOracleAbi,
+            functionName: "postPrices",
+            args: [ids, prices, timestamps, signatures],
+            gas: BigInt(ids.length) * 200000n + 300000n,
+            nonce: nonce++,
+        });
+        posted += ids.length;
+        console.log(`[keeper] posted ${ids.length} price(s) [chunk]: ${hash}`);
+    }
+    console.log(`[keeper] posted ${posted} price(s) across ${Math.ceil(fresh.length / chunkSize)} tx(s)`);
 }

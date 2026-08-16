@@ -25,6 +25,69 @@ const SIM_USD: Record<string, Sim> = {
   LUMBER: { price: 600, vol: 0.08 },
   MILK: { price: 19.5, vol: 0.06 },
   RUBBER: { price: 1.7, vol: 0.07 },
+  // Industrial metals (USD-quoted; anchors mirror keeper/src/sources.ts SIM). Present so METALS_INDEX
+  // can be computed client-side from its constituents; also gives these five a smooth client ticker.
+  COPPER: { price: 9200, vol: 0.07 },
+  ALUMINUM: { price: 2400, vol: 0.06 },
+  ZINC: { price: 2700, vol: 0.08 },
+  NICKEL: { price: 16500, vol: 0.1 },
+  PALLADIUM: { price: 1000, vol: 0.1 },
+  // Energy (all USD-quoted → client model applies; anchors mirror keeper/src/sources.ts SIM)
+  CRUDE_OIL: { price: 78, vol: 0.08 },
+  BRENT_CRUDE: { price: 82, vol: 0.08 },
+  NATURAL_GAS: { price: 2.9, vol: 0.18 },
+  GASOLINE: { price: 2.35, vol: 0.1 },
+  HEATING_OIL: { price: 2.5, vol: 0.1 },
+  GASOIL: { price: 720, vol: 0.09 },
+  TTF_GAS: { price: 34, vol: 0.2 },
+  UK_GAS: { price: 1.0, vol: 0.2 },
+  ETHANOL: { price: 1.7, vol: 0.1 },
+  NAPHTHA: { price: 620, vol: 0.1 },
+  PROPANE: { price: 0.75, vol: 0.12 },
+  CARBON_EU: { price: 72, vol: 0.12 },
+  LNG_JKM: { price: 13, vol: 0.2 },
+  METHANOL: { price: 320, vol: 0.1 },
+  POWER_DE: { price: 90, vol: 0.22 },
+  POWER_FR: { price: 85, vol: 0.22 },
+  BITUMEN: { price: 400, vol: 0.12 },
+};
+
+// SYNTHETIC INDEX markets: an equal-weight basket rebased to 100 (mirrors keeper/src/indexes.ts).
+// index(t) = 100 * mean( leafPrice_i(t) / base_i ), base_i = the leaf's SIM anchor, so the index
+// rests at 100. Computed from the same deterministic leaf curves, so the client index matches the
+// value the keeper derives and posts on-chain.
+interface IndexDef {
+  constituents: { symbol: string; base: number }[];
+}
+const INDEX_DEFS: Record<string, IndexDef> = {
+  ENERGY_INDEX: {
+    constituents: [
+      { symbol: "CRUDE_OIL", base: 78 },
+      { symbol: "BRENT_CRUDE", base: 82 },
+      { symbol: "NATURAL_GAS", base: 2.9 },
+      { symbol: "GASOLINE", base: 2.35 },
+      { symbol: "HEATING_OIL", base: 2.5 },
+    ],
+  },
+  METALS_INDEX: {
+    constituents: [
+      { symbol: "COPPER", base: 9200 },
+      { symbol: "ALUMINUM", base: 2400 },
+      { symbol: "ZINC", base: 2700 },
+      { symbol: "NICKEL", base: 16500 },
+      { symbol: "PALLADIUM", base: 1000 },
+    ],
+  },
+  GRAIN_INDEX: {
+    constituents: [
+      { symbol: "CORN", base: 4.4171 },
+      { symbol: "WHEAT", base: 6.3757 },
+      { symbol: "SOYBEANS", base: 11.5254 },
+      { symbol: "SUGAR", base: 0.1506 },
+      { symbol: "COFFEE", base: 3.2305 },
+      { symbol: "COTTON", base: 0.8237 },
+    ],
+  },
 };
 
 function simSeed(sym: string): number {
@@ -58,13 +121,28 @@ function fbm(seed: number, t: number): number {
 }
 
 export function hasSimModel(symbol: string): boolean {
-  return symbol in SIM_USD;
+  return symbol in SIM_USD || symbol in INDEX_DEFS;
 }
 
 /// The simulated USD price at a given unix second — the exact deterministic curve the keeper posts.
 /// Sampling this faster than the on-chain post cadence gives a smooth "live" price that still passes
 /// through every on-chain value. Returns null for markets without a client model.
+/// Synthetic indexes are computed from their constituents (equal-weight, rebased to 100), matching
+/// keeper/src/indexes.ts, so an index curve also passes through the on-chain values.
 export function simPriceUsdAt(symbol: string, tsSec: number): number | null {
+  const idx = INDEX_DEFS[symbol];
+  if (idx) {
+    let sumRatio = 0;
+    let have = 0;
+    for (const c of idx.constituents) {
+      const leaf = simPriceUsdAt(c.symbol, tsSec);
+      if (leaf == null || !(leaf > 0)) continue;
+      sumRatio += leaf / c.base;
+      have++;
+    }
+    if (have === 0 || have * 2 < idx.constituents.length) return null;
+    return 100 * (sumRatio / have);
+  }
   const cfg = SIM_USD[symbol];
   if (!cfg) return null;
   return cfg.price * (1 + fbm(simSeed(symbol), tsSec) * cfg.vol);
