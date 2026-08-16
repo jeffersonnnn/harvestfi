@@ -21,6 +21,22 @@ keeper/dist/
 **/.dev.vars
 **/.dev.vars.*
 
+# Internal notes / chain-of-thought — kept local, never shared
+CLAUDE.md
+FRONTEND-PLAN.md
+GO-LIVE.md
+HANDOFF.md
+LAUNCH-PLAN.md
+LAUNCHPAD-PHASE0.md
+LAUNCHPAD-PLAN.md
+NFT-PLAN.md
+PREDICTION-MARKETS.md
+SESSION-HANDOFF.md
+STRATEGY-COINS.md
+contracts/AUDIT-SCOPE.md
+contracts/DECISIONS.md
+contracts/KEEPER.md
+
 # Generated /brag videos + composition scaffolds (large, regenerable)
 brag-output/
 brag-output-*/
