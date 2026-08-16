@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { useMarkets } from "@/hooks/use-markets";
+import { useMarketplace } from "@/hooks/use-marketplace";
 import { LicensesTable } from "@/components/licenses-table";
+import { MarketplaceActivity } from "@/components/marketplace-activity";
 
 export default function LicensesPage() {
   const { markets } = useMarkets();
+  const marketplace = useMarketplace();
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-5 py-10 sm:px-8">
@@ -41,7 +44,9 @@ export default function LicensesPage() {
         />
       </div>
 
-      <LicensesTable markets={markets} />
+      <MarketplaceActivity markets={markets} data={marketplace} />
+
+      <LicensesTable markets={markets} lastSale={marketplace.lastSale} />
 
       <p className="text-sm text-bone/50">
         New here?{" "}

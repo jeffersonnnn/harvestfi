@@ -31,9 +31,9 @@ export default function LaunchPage() {
         </p>
       )}
 
-      <p className="text-xs text-bone/40">
+      {/* <p className="text-xs text-bone/40">
         Prices shown across HarvestFi are simulated for now. Nothing here is investment advice.
-      </p>
+      </p> */}
     </div>
   );
 }

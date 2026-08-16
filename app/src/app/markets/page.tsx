@@ -16,8 +16,8 @@ export default function MarketsPage() {
           <p className="label text-wheat">The board</p>
           <h1 className="font-display text-3xl font-medium tracking-tight">Markets</h1>
           <p className="mt-2 max-w-md text-sm text-bone/55">
-            Live prices pushed on-chain every minute. A stale badge means the feed paused; trading
-            auto-disables until it resumes.
+            Prices tick live; the on-chain feed refreshes regularly. A stale badge means the feed
+            paused; trading auto-disables until it resumes.
           </p>
         </div>
         <span className="label flex items-center gap-1.5 text-bone/50">

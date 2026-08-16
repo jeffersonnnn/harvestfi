@@ -4,7 +4,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/header";
 import { NetworkBanner } from "@/components/network-banner";
-import { LaunchpadBanner } from "@/components/launchpad-banner";
+import { AnnouncementBanner } from "@/components/announcement-banner";
 // import { SimulatedBanner } from "@/components/simulated-banner";
 import { BRAND } from "@/lib/brand";
 
@@ -48,7 +48,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         <Providers>
           {/* <SimulatedBanner /> */}
-          <LaunchpadBanner />
+          <AnnouncementBanner />
           <Header />
           <NetworkBanner />
           <main className="flex-1">{children}</main>

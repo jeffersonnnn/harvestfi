@@ -23,10 +23,16 @@ export function CoinCard({ item, market, ethUsd }: { item: LaunchItem; market?: 
         <div className="flex items-center gap-3">
           <CoinAvatar image={item.image} marketSymbol={market?.symbol} size={46} />
           <div className="min-w-0 flex-1">
-            <div className="truncate font-medium hover:text-wheat">{item.symbol ?? "..."}</div>
-            <div className="truncate text-xs text-bone/50">
-              {market ? `paired to ${prettyName(market.symbol)}` : item.name ?? truncateAddress(item.token)}
+            <div className="truncate font-medium">
+              <span className="hover:text-wheat">{item.symbol ?? "..."}</span>
+              {market && (
+                <>
+                  <span className="text-bone/30"> / </span>
+                  <span className="text-wheat">{prettyName(market.symbol)}</span>
+                </>
+              )}
             </div>
+            <div className="truncate text-xs text-bone/50">{item.name ?? truncateAddress(item.token)}</div>
           </div>
         </div>
         <div className="mt-3 flex items-center justify-between text-xs">

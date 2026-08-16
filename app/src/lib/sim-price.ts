@@ -61,16 +61,29 @@ export function hasSimModel(symbol: string): boolean {
   return symbol in SIM_USD;
 }
 
+/// The simulated USD price at a given unix second — the exact deterministic curve the keeper posts.
+/// Sampling this faster than the on-chain post cadence gives a smooth "live" price that still passes
+/// through every on-chain value. Returns null for markets without a client model.
+export function simPriceUsdAt(symbol: string, tsSec: number): number | null {
+  const cfg = SIM_USD[symbol];
+  if (!cfg) return null;
+  return cfg.price * (1 + fbm(simSeed(symbol), tsSec) * cfg.vol);
+}
+
+/// The simulated price right now as a 1e8-USD bigint (for display next to on-chain prices). Null if no model.
+export function simPriceE8Now(symbol: string): bigint | null {
+  const usd = simPriceUsdAt(symbol, Math.floor(Date.now() / 1000));
+  return usd == null ? null : BigInt(Math.round(usd * 1e8));
+}
+
 /// Dense backfill for the chart: `count` points ending now, `stepSec` apart, as {ts, price(1e8 string)}.
 export function simBackfill(symbol: string, count = 120, stepSec = 60): { ts: number; price: string }[] {
-  const cfg = SIM_USD[symbol];
-  if (!cfg) return [];
-  const seed = simSeed(symbol);
+  if (!hasSimModel(symbol)) return [];
   const now = Math.floor(Date.now() / 1000);
   const out: { ts: number; price: string }[] = [];
   for (let i = count - 1; i >= 0; i--) {
     const ts = now - i * stepSec;
-    const usd = cfg.price * (1 + fbm(seed, ts) * cfg.vol);
+    const usd = simPriceUsdAt(symbol, ts)!;
     out.push({ ts, price: String(Math.round(usd * 1e8)) });
   }
   return out;

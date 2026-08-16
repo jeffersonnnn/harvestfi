@@ -1,5 +1,13 @@
 import { createPublicClient, http, defineChain, parseEventLogs } from "viem";
-import { engineAbi, oracleAbi, registryAbi, positionClosedEvent } from "./abi";
+import {
+  engineAbi,
+  oracleAbi,
+  registryAbi,
+  positionClosedEvent,
+  predictionAbi,
+  betPlacedEvent,
+  marketResolvedEvent,
+} from "./abi";
 
 export interface Env {
   DB: D1Database;
@@ -11,6 +19,8 @@ export interface Env {
   START_BLOCK: string;
   MAX_RANGE?: string; // blocks scanned per tick (backfills over runs)
   MAX_BLOCK_META?: string; // cap on per-tick getBlock calls (subrequest budget)
+  PREDICTION_ADDRESS?: `0x${string}`; // PredictionMarket (optional; skips prediction indexing if unset)
+  PREDICTION_START_BLOCK?: string; // deploy block for bet-log scanning
 }
 
 function client(env: Env) {
@@ -115,6 +125,82 @@ async function indexTick(env: Env): Promise<void> {
     });
   }
 
+  // 3) Prediction markets - refresh each market's state (no logs needed), and index bet/resolve
+  //    events incrementally from the deploy block via getLogs (backfills over ticks).
+  if (env.PREDICTION_ADDRESS) {
+    const pmCount = Number(
+      await c.readContract({ address: env.PREDICTION_ADDRESS, abi: predictionAbi, functionName: "marketCount" }),
+    );
+    if (pmCount > 0) {
+      const mResults = await c.multicall({
+        allowFailure: true,
+        contracts: Array.from({ length: pmCount }, (_, id) => ({
+          address: env.PREDICTION_ADDRESS!, abi: predictionAbi, functionName: "getMarket", args: [BigInt(id)],
+        })),
+      });
+      mResults.forEach((r, id) => {
+        if (r.status !== "success") return;
+        const m = r.result as unknown as {
+          commodityId: bigint; thresholdE8: bigint; expiry: bigint; isAbove: boolean; status: number;
+          outcomeYes: boolean; yesPool: bigint; noPool: bigint; resolvedPrice: bigint; creator: string;
+        };
+        stmts.push(
+          env.DB.prepare(
+            `INSERT OR REPLACE INTO prediction_markets
+             (id, commodity_id, threshold_e8, expiry, is_above, status, outcome_yes, yes_pool, no_pool, resolved_price, creator)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ).bind(
+            id, Number(m.commodityId), m.thresholdE8.toString(), Number(m.expiry), m.isAbove ? 1 : 0,
+            m.status, m.outcomeYes ? 1 : 0, m.yesPool.toString(), m.noPool.toString(),
+            m.resolvedPrice.toString(), m.creator.toLowerCase(),
+          ),
+        );
+      });
+    }
+
+    // Bet/resolve events (activity feed). Cursor in meta; range-capped like positions.
+    try {
+      const start = Number(env.PREDICTION_START_BLOCK ?? env.START_BLOCK);
+      const from = Number(await getMeta(env, "pred_last_block", String(start)));
+      const latest = Number(await c.getBlockNumber());
+      const maxRange = Number(env.MAX_RANGE ?? "3000");
+      const to = Math.min(from + maxRange, latest);
+      if (to > from) {
+        const [bets, resolves] = await Promise.all([
+          c.getLogs({ address: env.PREDICTION_ADDRESS, event: betPlacedEvent, fromBlock: BigInt(from + 1), toBlock: BigInt(to) }),
+          c.getLogs({ address: env.PREDICTION_ADDRESS, event: marketResolvedEvent, fromBlock: BigInt(from + 1), toBlock: BigInt(to) }),
+        ]);
+        const ZERO = "0x0000000000000000000000000000000000000000";
+        for (const l of bets) {
+          const a = l.args as { marketId: bigint; bettor: string; isYes: boolean; amount: bigint };
+          stmts.push(
+            env.DB.prepare(
+              `INSERT OR IGNORE INTO prediction_bets (tx_hash, log_index, kind, market_id, is_yes, amount, who, block)
+               VALUES (?, ?, 'bet', ?, ?, ?, ?, ?)`,
+            ).bind(
+              l.transactionHash, Number(l.logIndex), Number(a.marketId), a.isYes ? 1 : 0,
+              a.amount.toString(), a.bettor.toLowerCase(), Number(l.blockNumber),
+            ),
+          );
+        }
+        for (const l of resolves) {
+          const a = l.args as { marketId: bigint; outcomeYes: boolean };
+          stmts.push(
+            env.DB.prepare(
+              `INSERT OR IGNORE INTO prediction_bets (tx_hash, log_index, kind, market_id, is_yes, amount, who, block)
+               VALUES (?, ?, 'resolved', ?, ?, '0', ?, ?)`,
+            ).bind(
+              l.transactionHash, Number(l.logIndex), Number(a.marketId), a.outcomeYes ? 1 : 0, ZERO, Number(l.blockNumber),
+            ),
+          );
+        }
+        stmts.push(env.DB.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('pred_last_block', ?)").bind(String(to)));
+      }
+    } catch {
+      /* getLogs unavailable this tick — markets table still refreshes; frontend falls back to its own scan. */
+    }
+  }
+
   if (stmts.length > 0) await env.DB.batch(stmts);
 }
 
@@ -186,6 +272,21 @@ async function handleApi(req: Request, env: Env): Promise<Response> {
       "SELECT price, ts FROM prices WHERE commodity_id = ? ORDER BY ts DESC LIMIT ?",
     ).bind(market, limit).all();
     return json((results ?? []).reverse()); // chronological for charting
+  }
+
+  if (p === "/predictions") {
+    const { results } = await env.DB.prepare(
+      "SELECT * FROM prediction_markets ORDER BY id DESC LIMIT 500",
+    ).all();
+    return json(results ?? []);
+  }
+
+  if (p === "/prediction-activity") {
+    const limit = Math.min(500, Number(url.searchParams.get("limit") ?? "50"));
+    const { results } = await env.DB.prepare(
+      "SELECT kind, market_id, is_yes, amount, who, block, tx_hash FROM prediction_bets ORDER BY block DESC LIMIT ?",
+    ).bind(limit).all();
+    return json(results ?? []);
   }
 
   return json({ error: "not found" });

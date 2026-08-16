@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { type MarketInfo } from "@/hooks/use-markets";
 import { usePriceHistory } from "@/hooks/use-price-history";
+import { useLivePriceE8 } from "@/hooks/use-live-price";
 import { Sparkline } from "@/components/sparkline";
 import { formatUsdPrice, formatETH } from "@/lib/format";
 import { marketMeta, prettyName, GROUPS, type Group } from "@/lib/commodities-meta";
@@ -89,8 +90,20 @@ export function MarketsTable({ markets, isLoading }: { markets: MarketInfo[]; is
 
 function MarketRow({ m }: { m: MarketInfo }) {
   const meta = marketMeta(m.symbol);
-  const { data: history } = usePriceHistory(m.id);
+  const { data: history } = usePriceHistory(m.id, m.symbol);
   const values = (history ?? []).map((p) => Number(p.price));
+
+  // Live-ticking price for simulated markets (display only; trades use the on-chain oracle).
+  const live = useLivePriceE8(m.symbol, m.priceE8, m.stale);
+  const shown = formatUsdPrice(live);
+  const prev = useRef({ shown, e8: live });
+  const [dir, setDir] = useState<"up" | "down" | "">("");
+  useEffect(() => {
+    if (shown !== prev.current.shown) setDir(live > prev.current.e8 ? "up" : "down");
+    prev.current = { shown, e8: live };
+    const t = setTimeout(() => setDir(""), 700);
+    return () => clearTimeout(t);
+  }, [shown, live]);
 
   return (
     <tr className="group border-b border-bone/5 transition-colors last:border-0 hover:bg-bone/[0.02] [&>td]:px-4 [&>td]:py-3.5">
@@ -116,7 +129,14 @@ function MarketRow({ m }: { m: MarketInfo }) {
         {m.stale ? (
           <span className="label rounded-full bg-wheat/10 px-2 py-0.5 text-wheat/90">stale</span>
         ) : (
-          <span className="tnum text-[0.95rem]">{formatUsdPrice(m.priceE8)}</span>
+          <span
+            className={
+              "tnum text-[0.95rem] transition-colors duration-300 " +
+              (dir === "up" ? "text-field" : dir === "down" ? "text-rust" : "")
+            }
+          >
+            {shown}
+          </span>
         )}
       </td>
       <td>

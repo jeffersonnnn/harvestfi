@@ -13,8 +13,9 @@ import { IS_TESTNET } from "@/lib/chain";
 const HERO_VIDEO = "/hero.mp4";
 const HERO_POSTER = "/hero-poster.jpg";
 
-const NAV = [
+const NAV: { href: string; label: string; badge?: string }[] = [
   { href: "/markets", label: "Markets" },
+  { href: "/predict", label: "Predict", badge: "New" },
   { href: "/demo", label: "Demo" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/pool", label: "Pool" },
@@ -134,9 +135,14 @@ export function HomeHero() {
                 <Link
                   key={n.href}
                   href={n.href}
-                  className="text-sm font-light text-white/80 transition-colors duration-200 hover:text-white"
+                  className="flex items-center gap-1.5 text-sm font-light text-white/80 transition-colors duration-200 hover:text-white"
                 >
                   {n.label}
+                  {n.badge && (
+                    <span className="rounded-full bg-field/25 px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-field">
+                      {n.badge}
+                    </span>
+                  )}
                 </Link>
               ))}
               <LaunchpadDropdown tone="hero" />
@@ -171,7 +177,7 @@ export function HomeHero() {
 
         {/* Hero content - our copy, Atelier layout */}
         <div className="flex flex-1 flex-col items-center justify-start px-6 pt-6 text-center sm:pt-8 md:pt-10 lg:pt-12">
-          <p className="label mb-5 text-white/70">Perpetual futures · real-world commodities</p>
+          <p className="label mb-5 text-white/70">Perps · Prediction markets · Launchpad — on real commodities</p>
 
           <h1 className="max-w-5xl font-instrument text-4xl leading-[1.08] text-white sm:text-5xl md:text-6xl lg:text-7xl">
             Trade the harvest.
@@ -206,6 +212,24 @@ export function HomeHero() {
             >
               <Play className="h-3.5 w-3.5" />
               How it works
+            </Link>
+          </div>
+
+          {/* Celebrate our two headline features */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
+            <Link
+              href="/predict"
+              className="inline-flex items-center gap-2 rounded-full border border-field/40 bg-field/10 px-4 py-2 text-sm text-field backdrop-blur-sm transition-colors hover:bg-field/20"
+            >
+              <span aria-hidden>🔮</span> Prediction markets
+              <span className="rounded-full bg-field/25 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide">New</span>
+            </Link>
+            <Link
+              href="/launch"
+              className="inline-flex items-center gap-2 rounded-full border border-wheat/40 bg-wheat/10 px-4 py-2 text-sm text-wheat backdrop-blur-sm transition-colors hover:bg-wheat/20"
+            >
+              <span aria-hidden>🚀</span> Launchpad
+              <span className="rounded-full bg-wheat/25 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide">New</span>
             </Link>
           </div>
 

@@ -73,3 +73,55 @@ export const registryAbi = [
     outputs: [{ type: "uint256" }],
   },
 ] as const;
+
+// PredictionMarket: markets read from state (getMarket), bets from BetPlaced logs.
+export const predictionAbi = [
+  { type: "function", name: "marketCount", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  {
+    type: "function",
+    name: "getMarket",
+    stateMutability: "view",
+    inputs: [{ name: "marketId", type: "uint256" }],
+    outputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "commodityId", type: "uint256" },
+          { name: "thresholdE8", type: "uint256" },
+          { name: "expiry", type: "uint64" },
+          { name: "isAbove", type: "bool" },
+          { name: "status", type: "uint8" },
+          { name: "outcomeYes", type: "bool" },
+          { name: "yesPool", type: "uint256" },
+          { name: "noPool", type: "uint256" },
+          { name: "winnerPool", type: "uint256" },
+          { name: "netLosingPool", type: "uint256" },
+          { name: "resolvedPrice", type: "uint256" },
+          { name: "creator", type: "address" },
+        ],
+      },
+    ],
+  },
+] as const;
+
+export const betPlacedEvent = {
+  type: "event",
+  name: "BetPlaced",
+  inputs: [
+    { name: "marketId", type: "uint256", indexed: true },
+    { name: "bettor", type: "address", indexed: true },
+    { name: "isYes", type: "bool", indexed: false },
+    { name: "amount", type: "uint256", indexed: false },
+  ],
+} as const;
+
+export const marketResolvedEvent = {
+  type: "event",
+  name: "MarketResolved",
+  inputs: [
+    { name: "marketId", type: "uint256", indexed: true },
+    { name: "outcomeYes", type: "bool", indexed: false },
+    { name: "price", type: "uint256", indexed: false },
+    { name: "fee", type: "uint256", indexed: false },
+  ],
+} as const;

@@ -1,4 +1,4 @@
-import { type Address } from "viem";
+import { type Address, parseAbi } from "viem";
 import {
   commodityRegistryAbi,
   pushPriceOracleAbi,
@@ -39,6 +39,74 @@ export const ENGINE_ADDRESS = addr(
   process.env.NEXT_PUBLIC_ENGINE_ADDRESS,
   "0x343635C6602169993DA969A1E813093ba19A074a"
 );
+// LicenseMarketplace (secondary market for license NFTs), mainnet 4663. Deployed 2026-08-14.
+export const MARKETPLACE_ADDRESS = addr(
+  process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS,
+  "0xbE50c0003a60726385d517a9188E51e5FD444ef7"
+);
+
+// Block the marketplace was deployed at (for bounded getLogs on its events).
+export const MARKETPLACE_DEPLOY_BLOCK = BigInt(
+  process.env.NEXT_PUBLIC_MARKETPLACE_DEPLOY_BLOCK ?? "36452414"
+);
+
+// PredictionMarket (parimutuel, oracle-resolved commodity-price binaries), mainnet 4663.
+// Deployed 2026-08-16. Testnet (46630) address: 0xB58c33F560deED608ae7Aef3E7Ebf931Ff4e6924.
+export const PREDICTION_MARKET_ADDRESS = addr(
+  process.env.NEXT_PUBLIC_PREDICTION_MARKET_ADDRESS,
+  "0xF8Ba8D3F862E6C0fC002e371a08dA9f8119C6482"
+);
+
+// Block the PredictionMarket was deployed at (for bounded getLogs on its events).
+export const PREDICTION_DEPLOY_BLOCK = BigInt(
+  process.env.NEXT_PUBLIC_PREDICTION_DEPLOY_BLOCK ?? "37626861"
+);
+
+export const predictionMarketAbi = parseAbi([
+  "function marketCount() view returns (uint256)",
+  "function getMarket(uint256 marketId) view returns ((uint256 commodityId, uint256 thresholdE8, uint64 expiry, bool isAbove, uint8 status, bool outcomeYes, uint256 yesPool, uint256 noPool, uint256 winnerPool, uint256 netLosingPool, uint256 resolvedPrice, address creator))",
+  "function odds(uint256 marketId) view returns (uint256 yesBps, uint256 noBps)",
+  "function claimable(uint256 marketId, address bettor) view returns (uint256)",
+  "function yesStake(uint256 marketId, address bettor) view returns (uint256)",
+  "function noStake(uint256 marketId, address bettor) view returns (uint256)",
+  "function claimed(uint256 marketId, address bettor) view returns (bool)",
+  "function proceeds(address account) view returns (uint256)",
+  "function feeBps() view returns (uint96)",
+  "function minBet() view returns (uint256)",
+  "function minDuration() view returns (uint64)",
+  "function resolveGracePeriod() view returns (uint64)",
+  "function permissionlessCreation() view returns (bool)",
+  "function paused() view returns (bool)",
+  "function owner() view returns (address)",
+  "function bet(uint256 marketId, bool isYes) payable",
+  "function resolve(uint256 marketId)",
+  "function cancel(uint256 marketId)",
+  "function claim(uint256 marketId) returns (uint256)",
+  "function withdrawProceeds() returns (uint256)",
+  "function createMarket(uint256 commodityId, uint256 thresholdE8, uint64 expiry, bool isAbove) returns (uint256)",
+  "event MarketCreated(uint256 indexed marketId, uint256 indexed commodityId, address indexed creator, uint256 thresholdE8, uint64 expiry, bool isAbove)",
+  "event BetPlaced(uint256 indexed marketId, address indexed bettor, bool isYes, uint256 amount)",
+  "event MarketResolved(uint256 indexed marketId, bool outcomeYes, uint256 price, uint256 fee)",
+  "event MarketCancelled(uint256 indexed marketId)",
+  "event Claimed(uint256 indexed marketId, address indexed bettor, uint256 amount)",
+]);
+
+export const licenseMarketplaceAbi = parseAbi([
+  "function list(uint256 tokenId, uint256 price)",
+  "function updatePrice(uint256 tokenId, uint256 newPrice)",
+  "function cancel(uint256 tokenId)",
+  "function delistStale(uint256 tokenId)",
+  "function buy(uint256 tokenId) payable",
+  "function withdrawProceeds() returns (uint256)",
+  "function getListing(uint256 tokenId) view returns (address seller, uint256 price)",
+  "function isListed(uint256 tokenId) view returns (bool)",
+  "function proceeds(address account) view returns (uint256)",
+  "function feeBps() view returns (uint96)",
+  "event Listed(uint256 indexed tokenId, address indexed seller, uint256 price)",
+  "event PriceUpdated(uint256 indexed tokenId, address indexed seller, uint256 price)",
+  "event Cancelled(uint256 indexed tokenId, address indexed seller)",
+  "event Sold(uint256 indexed tokenId, address indexed seller, address indexed buyer, uint256 price, uint256 fee)",
+]);
 
 // Fallback only: the UI reads mintPrice() live from the NFT contract. Keep in sync with the
 // launch price so the button label is right before the read resolves. Owner can change it on-chain.

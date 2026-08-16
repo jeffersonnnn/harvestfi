@@ -6,9 +6,13 @@ compatibility_flags = ["nodejs_compat"]
 # Cron-only worker: no public HTTP endpoint, so no workers.dev subdomain needed.
 workers_dev = false
 
-# Fire one tick every minute (Cloudflare cron min granularity). This replaces the Node setInterval loop.
+# "*/5 * * * *"  -> price tick every 5 min. The stale threshold is 1 HOUR, so 5-min posts are far fresher
+#   than needed; the every-minute cadence was overloading the shared public RPC (429). Restore to
+#   "* * * * *" only after moving RPC_URL to a dedicated endpoint.
+# "*/15 * * * *" -> auto-resolve expired prediction markets (worker.ts routes this cron to resolveOnce).
+#   Cheap: one multicall reads all markets, then only expired-open ones are settled (capped RESOLVE_LIMIT).
 [triggers]
-crons = ["* * * * *"]
+crons = ["*/5 * * * *", "*/15 * * * *"]
 
 # --- ACTIVE: Robinhood MAINNET (4663). Testnet values kept in the comment below for rollback. ---
 [vars]
@@ -20,8 +24,14 @@ CHAIN_ID = "4663"
 RPC_URL = "https://rpc.mainnet.chain.robinhood.com"
 ORACLE_ADDRESS = "0x43F4B3E880437De908f418B199daE8F326F0F41A"
 REGISTRY_ADDRESS = "0xB56AB31fb1F1559c435A72B5Fd3c7E63baea3D96"
+# PredictionMarket for the */15 auto-resolve cron. RESOLVE_KEY falls back to PRIVATE_KEY (the price
+# signer / owner) which holds gas; resolve()/cancel() are permissionless so any funded key works.
+PREDICTION_ADDRESS = "0xF8Ba8D3F862E6C0fC002e371a08dA9f8119C6482"
 DRY_RUN = "false"  # live: sign + post on-chain.
-POST_BATCH_LIMIT = "0"  # Workers Paid: no cap - post all 23 markets every minute.
+# 51 = post all markets each tick WITHOUT the on-chain getPrice multicall read (batch/no-read path in
+# tick.ts). Fewer RPC calls per tick = fewer chances to hit the shared public-RPC rate limit. (Was "0",
+# which read every market's on-chain ts first.)
+POST_BATCH_LIMIT = "51"
 # TESTNET rollback (46630): RPC https://rpc.testnet.chain.robinhood.com,
 #   ORACLE 0xd3Fa9008eC7511f3d32A1760C3Ea52c58111f140, REGISTRY 0xFc7e57695D3b44393Ed007e45527e1eaB9Df58D6
 

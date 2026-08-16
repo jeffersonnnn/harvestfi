@@ -5,7 +5,7 @@ import { usePublicClient } from "wagmi";
 import { pushPriceOracleAbi, ORACLE_ADDRESS } from "@/lib/contracts";
 import { fetchPriceHistory, type PricePoint } from "@/lib/indexer";
 import { SIMULATED_PRICES } from "@/lib/chain";
-import { hasSimModel, simBackfill } from "@/lib/sim-price";
+import { hasSimModel, simBackfill, simPriceUsdAt } from "@/lib/sim-price";
 
 /// Price history for the chart.
 ///
@@ -56,9 +56,36 @@ export function usePriceHistory(market: number, symbol?: string, _limit = 200) {
     };
   }, [market, symbol]);
 
-  // Poll the live oracle price and accumulate.
+  // Simulated markets: advance the chart's leading edge live from the client model every 2s (the same
+  // deterministic curve the keeper posts). This keeps the chart moving between the 5-minute on-chain
+  // posts AND skips the per-row oracle polling below, cutting RPC load.
+  const isSim = SIMULATED_PRICES && !!symbol && hasSimModel(symbol);
   useEffect(() => {
-    if (market < 0 || !client) return;
+    if (market < 0 || !isSim || !symbol) return;
+    let stop = false;
+    const tick = () => {
+      const now = Math.floor(Date.now() / 1000);
+      const usd = simPriceUsdAt(symbol, now);
+      if (usd != null && !stop) {
+        buf.current.set(now, Math.round(usd * 1e8));
+        if (buf.current.size > 500) {
+          const keys = [...buf.current.keys()].sort((a, b) => a - b);
+          for (const k of keys.slice(0, keys.length - 500)) buf.current.delete(k);
+        }
+        flush();
+      }
+    };
+    tick();
+    const id = setInterval(tick, 2000);
+    return () => {
+      stop = true;
+      clearInterval(id);
+    };
+  }, [market, symbol, isSim]);
+
+  // Poll the live oracle price and accumulate (non-simulated markets only — sim markets use the model above).
+  useEffect(() => {
+    if (market < 0 || !client || isSim) return;
     let stop = false;
     const tick = async () => {
       try {
@@ -88,7 +115,7 @@ export function usePriceHistory(market: number, symbol?: string, _limit = 200) {
       stop = true;
       clearInterval(id);
     };
-  }, [market, client]);
+  }, [market, client, isSim]);
 
   return { data: points };
 }

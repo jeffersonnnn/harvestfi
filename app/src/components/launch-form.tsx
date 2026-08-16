@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAccount, usePublicClient, useWalletClient, useWriteContract } from "wagmi";
 import { type Address } from "viem";
 import { useMarkets } from "@/hooks/use-markets";
@@ -31,6 +33,7 @@ const LEVERAGE_OPTIONS = [2, 5, 10];
 type Phase = "idle" | "working" | "done" | "error";
 
 export function LaunchForm() {
+  const router = useRouter();
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
@@ -164,6 +167,8 @@ export function LaunchForm() {
 
       setResult({ token, positionId, hash, registered, strategyVault });
       setPhase("done");
+      // Auto-open the new coin's page (chart + stats + trade panel).
+      router.push(`/coins/${token}`);
     } catch (e) {
       setError(e instanceof Error ? e.message.split("\n")[0] : "Launch failed");
       setPhase("error");
@@ -196,21 +201,35 @@ export function LaunchForm() {
             ? `Fees now run a ${leverageX}x ${isLong ? "long" : "short"} on ${selectedMarket ? prettyName(selectedMarket.symbol) : "the market"} and buy back + burn the coin.`
             : "You hold the coin's creator-fee NFT. As it trades, collect your fees any time from the coin's page."}
         </p>
-        <button
-          onClick={() => {
-            setPhase("idle");
-            setName("");
-            setSymbol("");
-            setImage("");
-            setWebsite("");
-            setTwitter("");
-            setMarketId(null);
-            setStrategyOn(false);
-          }}
-          className="mt-5 rounded-full bg-wheat px-4 py-1.5 text-xs font-semibold text-soil-950 hover:bg-wheat/90"
-        >
-          Launch another
-        </button>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <Link
+            href={`/coins/${result.token}`}
+            className="rounded-full bg-wheat px-5 py-2 text-xs font-semibold text-soil-950 hover:bg-wheat/90"
+          >
+            View your coin →
+          </Link>
+          <Link
+            href="/coins"
+            className="rounded-full border border-bone/15 px-5 py-2 text-xs font-semibold text-bone/80 hover:bg-bone/10"
+          >
+            Explore all coins
+          </Link>
+          <button
+            onClick={() => {
+              setPhase("idle");
+              setName("");
+              setSymbol("");
+              setImage("");
+              setWebsite("");
+              setTwitter("");
+              setMarketId(null);
+              setStrategyOn(false);
+            }}
+            className="text-xs font-semibold text-bone/50 hover:text-bone/80"
+          >
+            Launch another
+          </button>
+        </div>
       </div>
     );
   }
@@ -354,8 +373,7 @@ export function LaunchForm() {
               </div>
               <p className="rounded-md border border-rust/25 bg-rust/[0.06] px-3 py-2 text-xs leading-relaxed text-rust/90">
                 Trade-off: you give up the creator-fee stream — it funds the strategy. Leverage can be
-                liquidated, so the fees can be lost. Take-profit closes at 2x, with a stop-loss. Prices are
-                simulated for now.
+                liquidated, so the fees can be lost. Take-profit closes at 2x, with a stop-loss.
               </p>
             </div>
           )}

@@ -43,15 +43,18 @@ export default function CoinPage() {
         <div className="flex items-center gap-4">
           <CoinAvatar image={image} marketSymbol={market?.symbol} size={58} />
           <div>
-            <h1 className="font-display text-3xl font-medium leading-tight">{symbol ?? "…"}</h1>
-            <div className="text-sm text-bone/50">
-              {name ?? truncateAddress(addr)}
+            <h1 className="font-display text-3xl font-medium leading-tight">
+              {symbol ?? "…"}
               {market && (
                 <>
-                  {" · themed on "}
+                  <span className="text-bone/30"> / </span>
                   <span className="text-wheat">{prettyName(market.symbol)}</span>
                 </>
               )}
+            </h1>
+            <div className="text-sm text-bone/50">
+              {name ?? truncateAddress(addr)}
+              {market && " · paired to a real commodity market"}
             </div>
           </div>
         </div>
@@ -99,10 +102,10 @@ export default function CoinPage() {
         <CoinTradePanel token={addr} symbol={symbol} priceEth={stats?.priceEth ?? 0} ethUsd={ethUsd} />
       </div>
 
-      <p className="text-xs text-bone/40">
+      {/* <p className="text-xs text-bone/40">
         The coin price above is real (from its Uniswap v4 pool). The commodity benchmark price shown elsewhere on
         HarvestFi is simulated. Nothing here is investment advice.
-      </p>
+      </p> */}
     </Shell>
   );
 }
